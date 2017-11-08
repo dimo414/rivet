@@ -1,0 +1,7 @@
+[package]
+name = "rivet"
+version = "0.1.0"
+authors = ["Michael Diamond", "Matthew Vilim"]
+
+[dependencies]
+tiny_http = "0.5.8"
