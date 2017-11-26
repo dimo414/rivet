@@ -17,6 +17,7 @@ If Ctrl+C isn't sufficient to kill the server (this seems to be the case on Wind
 * [`tiny_http` docs](https://tiny-http.github.io/tiny-http/tiny_http)
   * [example server](https://github.com/tomaka/example-tiny-http)
 * [Project Notes](https://docs.google.com/document/d/182-uPnD8Jd7VNaU7A7t2rDrBSeip0EU4H3IenELNcOY/edit)
+* [Rocket Codegen](https://api.rocket.rs/rocket_codegen/)
 
 ## Coursework
 

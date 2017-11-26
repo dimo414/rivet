@@ -1,3 +1,4 @@
+#[macro_use] extern crate lazy_static;
 extern crate tiny_http;
 
 use std::collections::HashMap;
@@ -21,10 +22,12 @@ fn main() {
     let mut responders_builder: HashMap<&str, Box<responders::Responder>> = HashMap::new();
     responders_builder.insert("", Box::new(RootResponder{}));
     responders_builder.insert("raw", Box::new(responders::raw::Raw{}));
+    responders_builder.insert("stringly", Box::new(responders::stringly::Stringly{}));
     let responders = responders_builder; // now the map is immutable
 
     // Start server
     let server = Server::http("0.0.0.0:8000").unwrap();
+    println!("server started: http://localhost:8000");
 
     // Single-threaded server - tiny_http supports multi-threading, but it's not necessary for the
     // initial proof-of-concept

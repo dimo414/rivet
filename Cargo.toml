@@ -4,4 +4,6 @@ version = "0.1.0"
 authors = ["Michael Diamond", "Matthew Vilim"]
 
 [dependencies]
+lazy_static = "0.2"
+regex = "0.2"
 tiny_http = "0.5.8"
