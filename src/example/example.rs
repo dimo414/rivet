@@ -19,7 +19,7 @@ impl Container {
         );
     }
     
-    fn resolve<T: 'static>(&self, s: &str) -> T {
+    fn resolve<T: Clone + 'static>(&self, s: &str) -> T {
         let item = self.constructors.get(s).unwrap();
         let construct = item.downcast_ref::<Construct<T>>().unwrap();
         construct.c()
@@ -40,14 +40,8 @@ trait Constructors<T> {
     fn construct<'a>(self) -> Construct<'a, T>;
 }
 
-impl Constructors<BaseRef> for BaseRef {
-    fn construct<'a>(self) -> Construct<'a, BaseRef> {
-        Construct { build: Box::new(self) }
-    }
-}
-
-impl Constructors<DepRef> for DepRef {
-    fn construct<'a>(self) -> Construct<'a, DepRef> {
+impl<T: Clone + 'static> Constructors<T> for T {
+    fn construct<'a>(self) -> Construct<'a, T> {
         Construct { build: Box::new(self) }
     }
 }
@@ -56,14 +50,8 @@ trait Builder<T> {
     fn c(&self) -> T;
 }
 
-impl Builder<BaseRef> for BaseRef {
-    fn c(&self) -> BaseRef {
-        self.clone()
-    }
-}
-
-impl Builder<DepRef> for DepRef {
-    fn c(&self) -> DepRef {
+impl<T: Clone> Builder<T> for T {
+    fn c(&self) -> T {
         self.clone()
     }
 }
