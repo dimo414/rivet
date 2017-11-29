@@ -43,6 +43,6 @@ impl responders::Responder for Stringly {
     }
 }
 
-fn respond(url_components: Vec<&str>, get_params: HashMap<&str, &str>) -> String {
-    format!("stringly!\nURL parts: |{}|\nQuery args: {:?}", url_components.join("|"), get_params)
+fn respond(url_components: Vec<&str>, url_params: HashMap<&str, &str>) -> String {
+    format!("stringly!\nURL parts: |{}|\nQuery args: {:?}", url_components.join("|"), url_params)
 }

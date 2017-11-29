@@ -19,11 +19,14 @@ mod responders;
 /// code paths registered with the `NicePlugin` responder.
 fn main() {
     // Register responders here
-    let mut responders_builder: HashMap<&str, Box<responders::Responder>> = HashMap::new();
-    responders_builder.insert("", Box::new(RootResponder{}));
-    responders_builder.insert("raw", Box::new(responders::raw::Raw{}));
-    responders_builder.insert("stringly", Box::new(responders::stringly::Stringly{}));
-    let responders = responders_builder; // now the map is immutable
+    let responders = {
+        let mut m: HashMap<&str, Box<responders::Responder>> = HashMap::new();
+        m.insert("", Box::new(RootResponder {}));
+        m.insert("pattern", Box::new(responders::pattern::Pattern {}));
+        m.insert("raw", Box::new(responders::raw::Raw {}));
+        m.insert("stringly", Box::new(responders::stringly::Stringly {}));
+        m // now the map is immutable
+    };
 
     // Start server
     let server = Server::http("0.0.0.0:8000").unwrap();

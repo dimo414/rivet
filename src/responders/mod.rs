@@ -1,5 +1,6 @@
 extern crate tiny_http;
 
+pub mod pattern;
 pub mod raw;
 pub mod stringly;
 
