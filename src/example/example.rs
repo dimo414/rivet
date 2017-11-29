@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::any::Any;
+use std::rc::Rc;
 
 struct Container {
     constructors: HashMap<String, Box<Any>>,
@@ -13,10 +14,7 @@ impl Container {
     }
     
     fn add<T: Constructors<T> + 'static>(&mut self, s: &str, value: T) {
-        self.constructors.insert(
-            s.to_string(), 
-            Box::new(value.construct()) as Box<Any>
-        );
+        self.constructors.insert(s.to_string(), Box::new(value.construct()) as Box<Any>);
     }
     
     fn resolve<T: Clone + 'static>(&self, s: &str) -> T {
@@ -69,22 +67,26 @@ impl BaseRef {
 
 #[derive(Clone)]
 struct DepRef {
-  b: BaseRef
+  b: Rc<BaseRef>
 }
 
 impl DepRef {
-  fn new(b: BaseRef) -> DepRef {
-    DepRef { b: b }
+  fn new(b: Rc<BaseRef>) -> DepRef {
+    DepRef { b: b.clone() }
   }
 }
 
 fn main() {
     let mut container = Container::new();
     
-    container.add("baseref", BaseRef::new());
-    let test: BaseRef = container.resolve("baseref");
-    container.add("depref", DepRef::new(test));
+    container.add("shared", Rc::new(BaseRef::new()));
+    let base: Rc<BaseRef> = container.resolve("shared");
+    container.add("depref1", DepRef::new(base));
+    let base: Rc<BaseRef> = container.resolve("shared");
+    container.add("depref2", DepRef::new(base));
     
-    let test2: BaseRef = container.resolve("baseref");
-    println!("{}", test2.int);
+    let dep1: DepRef = container.resolve("depref1");
+    let dep2: DepRef = container.resolve("depref2");
+    println!("{}",  dep1.b.int);
+    println!("{}",  dep2.b.int);
 }
