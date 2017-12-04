@@ -1,8 +1,8 @@
-extern crate tiny_http;
-
 pub mod pattern;
 pub mod raw;
 pub mod stringly;
+
+use tiny_http;
 
 /// Our plugins implement this trait, accepting HTTP requests and returning HTTP responses.
 ///

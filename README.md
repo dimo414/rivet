@@ -18,6 +18,7 @@ If Ctrl+C isn't sufficient to kill the server (this seems to be the case on Wind
   * [example server](https://github.com/tomaka/example-tiny-http)
 * [Project Notes](https://docs.google.com/document/d/182-uPnD8Jd7VNaU7A7t2rDrBSeip0EU4H3IenELNcOY/edit)
 * [Rocket Codegen](https://api.rocket.rs/rocket_codegen/)
+* [Build Scripts for Rust](http://doc.crates.io/build-script.html)
 
 ### DI Frameworks
 

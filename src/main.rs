@@ -1,10 +1,12 @@
 #[macro_use] extern crate lazy_static;
+extern crate regex;
 extern crate tiny_http;
 
 use std::collections::HashMap;
 use tiny_http::{Server, Response, StatusCode};
 
 mod responders;
+mod util;
 
 /// Server entry point - starts up a web server and routes requests to the known responders.
 ///
@@ -20,11 +22,11 @@ mod responders;
 fn main() {
     // Register responders here
     let responders = {
-        let mut m: HashMap<&str, Box<responders::Responder>> = HashMap::new();
-        m.insert("", Box::new(RootResponder {}));
-        m.insert("pattern", Box::new(responders::pattern::Pattern {}));
-        m.insert("raw", Box::new(responders::raw::Raw {}));
-        m.insert("stringly", Box::new(responders::stringly::Stringly {}));
+        let mut m: HashMap<String, Box<responders::Responder>> = HashMap::new();
+        m.insert("".into(), Box::new(RootResponder {}));
+        m.insert("pattern".into(), Box::new(responders::pattern::Pattern {}));
+        m.insert("raw".into(), Box::new(responders::raw::Raw {}));
+        m.insert("stringly".into(), Box::new(responders::stringly::Stringly {}));
         m // now the map is immutable
     };
 
@@ -44,14 +46,19 @@ fn main() {
         }
 
         // TODO logging framework?
-        println!("received {:?} request for url {:?}", request.method(), request.url());
+        print!("received {:?} request for url {:?}", request.method(), request.url());
 
         // Lookup the right responder for the request
-        let response = match responders.get(url_prefix(&request.url())) {
-            Some(responder) => responder.handle(&request),
+        let url_prefix = url_prefix(&request.url()).to_string();
+        let response = match responders.get(&url_prefix) {
+            Some(responder) => {
+                if url_prefix.len() > 0 { print!(" - routed to {}", url_prefix); }
+                responder.handle(&request)
+            },
             _ => Response::from_string("No responder found")
                 .with_status_code(StatusCode::from(404)).boxed()
         };
+        println!();
 
         // Note that respond takes ownership of request at this point (self vs. &self)
         let _ = request.respond(response); // ignore Result, it's a client-side error
@@ -62,17 +69,23 @@ fn main() {
 /// Get the first section of a URL, effectively matching the pattern `/([^/]+)/.*`.
 fn url_prefix(url: &str) -> &str {
     let without_slash = &url[1..];
-    match without_slash.find('/') {
+    match without_slash.find(|c| c == '/' || c == '?') {
         Some(index) => &without_slash[..index],
         None => without_slash,
     }
 }
 
 /// A responder for the homepage (`/`)
-// TODO output a list of installed responders, as links, for ease of navigation
 struct RootResponder {}
 impl responders::Responder for RootResponder {
     fn handle(&self, _request: &tiny_http::Request) -> tiny_http::ResponseBox {
-        Response::from_string("hello world").boxed()
+        // TODO better names / clearer descriptions
+        Response::from_string(
+            "<ul>
+            <li><a href=\"/raw/foo/bar?baz\">Raw</a> - handle Request object directly</li>
+            <li><a href=\"/stringly/foo/bar?baz\">Stringly</a> - pass in fixed request details</li>
+            <li><a href=\"/pattern/foo/bar?baz\">Pattern</a> - route requests by regex patterns</li>
+            </ul>"
+        ).with_header("Content-type: text/html".parse::<tiny_http::Header>().unwrap()).boxed()
     }
 }

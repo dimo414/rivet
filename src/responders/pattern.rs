@@ -1,9 +1,8 @@
-
-extern crate tiny_http;
-extern crate regex;
-
+use regex;
 use responders;
 use std::collections::HashMap;
+use tiny_http;
+use util;
 
 lazy_static! {
     // Add routes to this vector
@@ -30,34 +29,14 @@ pub struct Pattern {
 
 impl responders::Responder for Pattern {
     fn handle(&self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
-        lazy_static! {
-            static ref URL_SPLIT: regex::Regex = regex::Regex::new("^/pattern([^?]*)(?:\\?(.*))?$").unwrap();
-            static ref QUERY_SEGMENT: regex::Regex = regex::Regex::new("^([^=]*)(?:=(.*))?$").unwrap();
-        }
-
-        let url_split = URL_SPLIT.captures(request.url()).unwrap();
-        let path = &url_split[1];
-        let query_str = url_split.get(2);
-        println!("path: {} query: {:?}", path, query_str);
-
-        let url_query = match query_str {
-            Some(query) => {
-                query.as_str().split('&')
-                    .map(|q| QUERY_SEGMENT.captures(q).unwrap())
-                    .map(|cap|
-                        (cap.get(1).unwrap().as_str(),
-                         cap.get(2).map(|m| m.as_str()).unwrap_or("")))
-                    .collect()
-            },
-            None => HashMap::new()
-        };
+        let url_parts = util::strip_url_prefix(request.url(), "/pattern");
 
         for route in ROUTES_GEN.iter() {
             let url_pattern = &route.1;
-            match url_pattern.captures(path) {
+            match url_pattern.captures(url_parts.path()) {
                 Some(captures) => {
                     let callback = &route.2;
-                    let response = callback(captures, url_query);
+                    let response = callback(captures, url_parts.query());
                     return tiny_http::Response::from_string((response)).boxed();
                 }
                 None => {}
