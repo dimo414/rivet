@@ -1,3 +1,4 @@
+pub mod closure;
 pub mod pattern;
 pub mod raw;
 pub mod stringly;

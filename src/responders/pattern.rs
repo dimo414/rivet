@@ -37,13 +37,12 @@ impl responders::Responder for Pattern {
                 Some(captures) => {
                     let callback = &route.2;
                     let response = callback(captures, url_parts.query());
-                    return tiny_http::Response::from_string((response)).boxed();
+                    return util::success(&response);
                 }
                 None => {}
             }
         }
 
-        tiny_http::Response::from_string("No matched pattern")
-            .with_status_code(tiny_http::StatusCode::from(404)).boxed()
+        util::fail404("No matched pattern")
     }
 }

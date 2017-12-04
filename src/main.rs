@@ -3,7 +3,7 @@ extern crate regex;
 extern crate tiny_http;
 
 use std::collections::HashMap;
-use tiny_http::{Server, Response, StatusCode};
+use tiny_http::{Server};
 
 mod responders;
 mod util;
@@ -27,6 +27,7 @@ fn main() {
         m.insert("pattern".into(), Box::new(responders::pattern::Pattern {}));
         m.insert("raw".into(), Box::new(responders::raw::Raw {}));
         m.insert("stringly".into(), Box::new(responders::stringly::Stringly {}));
+        m.insert("closure".into(), Box::new(responders::closure::Closure {}));
         m // now the map is immutable
     };
 
@@ -41,7 +42,7 @@ fn main() {
         // According to https://github.com/rust-lang/cargo/issues/2343 it should be, but at least on
         // my system it's not working - might be https://github.com/rust-lang/cargo/issues/4575
         if request.url() == "/quit" {
-            let _ = request.respond(Response::from_string("Shutting Down!"));
+            let _ = request.respond(util::success("Shutting Down!"));
             break;
         }
 
@@ -55,8 +56,7 @@ fn main() {
                 if url_prefix.len() > 0 { print!(" - routed to {}", url_prefix); }
                 responder.handle(&request)
             },
-            _ => Response::from_string("No responder found")
-                .with_status_code(StatusCode::from(404)).boxed()
+            _ => util::fail404("No responder found")
         };
         println!();
 
@@ -80,12 +80,13 @@ struct RootResponder {}
 impl responders::Responder for RootResponder {
     fn handle(&self, _request: &tiny_http::Request) -> tiny_http::ResponseBox {
         // TODO better names / clearer descriptions
-        Response::from_string(
+        util::success_html(
             "<ul>
             <li><a href=\"/raw/foo/bar?baz\">Raw</a> - handle Request object directly</li>
             <li><a href=\"/stringly/foo/bar?baz\">Stringly</a> - pass in fixed request details</li>
             <li><a href=\"/pattern/foo/bar?baz\">Pattern</a> - route requests by regex patterns</li>
+            <li><a href=\"/closure/both/bar?baz\">Closure</a> - route requests to user-specified closures</li>
             </ul>"
-        ).with_header("Content-type: text/html".parse::<tiny_http::Header>().unwrap()).boxed()
+        )
     }
 }

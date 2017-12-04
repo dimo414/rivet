@@ -1,7 +1,22 @@
 use regex;
 use std::collections::HashMap;
+use tiny_http;
 
 /// Common utilities that may be used across responders
+
+pub fn success(response: &str) -> tiny_http::ResponseBox {
+    tiny_http::Response::from_string(response).boxed()
+}
+
+pub fn success_html(response: &str) -> tiny_http::ResponseBox {
+    tiny_http::Response::from_string(response)
+        .with_header("Content-type: text/html".parse::<tiny_http::Header>().unwrap()).boxed()
+}
+
+pub fn fail404(response: &str) -> tiny_http::ResponseBox {
+    tiny_http::Response::from_string(response)
+        .with_status_code(tiny_http::StatusCode::from(404)).boxed()
+}
 
 lazy_static! {
     static ref URL_SPLIT: regex::Regex = regex::Regex::new(r"^([^?]*)(?:\?(.*))?$").unwrap();

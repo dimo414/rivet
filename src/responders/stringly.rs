@@ -4,6 +4,7 @@ use tiny_http;
 use util;
 
 /// Stringly-typed responder, treats URLs as strings, application logic must do parsing
+// TODO does this example have anything that pattern doesn't? Should it be deleted?
 pub struct Stringly {
 }
 
@@ -12,7 +13,7 @@ impl responders::Responder for Stringly {
         let url_parts = util::strip_url_prefix(request.url(), "/stringly");
 
         let response = respond(url_parts.path_components(), url_parts.query());
-        tiny_http::Response::from_string(response).boxed()
+        util::success(&response)
     }
 }
 
