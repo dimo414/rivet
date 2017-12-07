@@ -7,20 +7,29 @@ use util;
 lazy_static! {
     // Add routes to this vector
     // Note that the order matters - the first matched pattern will be used
-    static ref ROUTES: Vec<(&'static str, fn(regex::Captures, HashMap<&str, &str>) -> String)> = vec![
-        // TODO expand this a little, demo responding with different functions
-        ("/foo/([^/]*)", handle),
-        ("", handle)
+    static ref ROUTES: Vec<Route> = vec![
+        Route::new("/foo/([^/]*)", handle_foo),
+        Route::new("", handle)
     ];
-    // Computed vector containing compiled patterns
-    // Ideally the ROUTES vector could just be this directly, but the types don't seem to work out
-    // without the intermediate variable
-    static ref ROUTES_GEN: Vec<(&'static str, regex::Regex, fn(regex::Captures, HashMap<&str, &str>) -> String)> =
-        ROUTES.iter().map(|t| (t.0, regex::Regex::new(&format!("^{}$", t.0)).unwrap(), t.1)).collect();
+}
+
+struct Route {
+    path: regex::Regex,
+    callback: fn(regex::Captures, HashMap<&str, &str>) -> String
+}
+
+impl Route {
+    pub fn new(path: &str, callback: fn(regex::Captures, HashMap<&str, &str>) -> String) -> Route {
+        Route { path: regex::Regex::new(&format!("^{}$", path)).unwrap(), callback }
+    }
 }
 
 fn handle(url_captures: regex::Captures, url_params: HashMap<&str, &str>) -> String {
     format!("pattern!\nURL captures: {:?}\nQuery args: {:?}", url_captures, url_params)
+}
+
+fn handle_foo(_url_captures: regex::Captures, url_params: HashMap<&str, &str>) -> String {
+    format!("Foo!\nQuery args: {:?}", url_params)
 }
 
 /// Regex-based responder, routes requests to separate URLs to different functions
@@ -31,11 +40,10 @@ impl responders::Responder for Pattern {
     fn handle(&self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
         let url_parts = util::strip_url_prefix(request.url(), "/pattern");
 
-        for route in ROUTES_GEN.iter() {
-            let url_pattern = &route.1;
-            match url_pattern.captures(url_parts.path()) {
+        for route in ROUTES.iter() {
+            match route.path.captures(url_parts.path()) {
                 Some(captures) => {
-                    let callback = &route.2;
+                    let callback = &route.callback;
                     let response = callback(captures, url_parts.query());
                     return util::success(&response);
                 }
