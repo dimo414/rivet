@@ -11,4 +11,4 @@ pipelines:
         script: # Modify the commands below to build your repository.
           - cargo build -v
           - cargo test -v
-          - ./test_server.sh
+          - bash ./test_server.sh
