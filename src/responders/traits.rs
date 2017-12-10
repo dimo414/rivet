@@ -18,7 +18,7 @@ impl responders::Responder for Traits {
 }
 
 fn dispatch<P: PathParts, Q: UrlParams>(parts: &P, query: &Q) -> String {
-    format!("Trait {:?} {:?}", parts.get(), query.get())
+    format!("Traits {:?} {:?}", parts.get(), query.get())
 }
 
 struct DIMap {
@@ -33,6 +33,9 @@ impl DIMap {
         DIMap { store }
     }
 }
+
+// These traits are functionally similar to Deref, but since they're traits and not types we can't
+// use Deref, so users must explitly call .get(). See https://stackoverflow.com/q/29256519/113632
 
 trait PathParts {
     fn get(&self) -> &Vec<String>;
