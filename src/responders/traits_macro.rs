@@ -73,7 +73,7 @@ impl responders::Responder for TraitsMacro {
             url_parts.query().iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
 
         let deps = DI::new(move |store| {
-            bind!(store, UrlParts, list_copy);
+            bind!(store, PathParts, list_copy);
             bind!(store, UrlParams, map_copy);
         });
 
@@ -81,10 +81,10 @@ impl responders::Responder for TraitsMacro {
     }
 }
 
-fn dispatch<P: UrlParts, Q: UrlParams>(parts: &P, query: &Q) -> String {
+fn dispatch<P: PathParts, Q: UrlParams>(parts: &P, query: &Q) -> String {
     format!("Trait {:?} {:?}", parts.get(), query.get())
 }
 
 binder!(DI);
-binding!(DI, UrlParts, Vec<String>);
+binding!(DI, PathParts, Vec<String>);
 binding!(DI, UrlParams, HashMap<String, String>);

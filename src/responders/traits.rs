@@ -17,7 +17,7 @@ impl responders::Responder for Traits {
     }
 }
 
-fn dispatch<P: UrlParts, Q: UrlParams>(parts: &P, query: &Q) -> String {
+fn dispatch<P: PathParts, Q: UrlParams>(parts: &P, query: &Q) -> String {
     format!("Trait {:?} {:?}", parts.get(), query.get())
 }
 
@@ -36,18 +36,18 @@ impl DIMap {
             url_parts.query().iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
 
         let mut store = HashMap::new();
-        store.insert("UrlParts".into(), Box::new(list_copy) as Box<Any>);
+        store.insert("PathParts".into(), Box::new(list_copy) as Box<Any>);
         store.insert("UrlParams".into(), Box::new(map_copy) as Box<Any>);
         DIMap { store }
     }
 }
 
-trait UrlParts {
+trait PathParts {
     fn get(&self) -> &Vec<String>;
 }
-impl UrlParts for DIMap {
+impl PathParts for DIMap {
     fn get(&self) -> &Vec<String> {
-        self.store.get("UrlParts").unwrap().downcast_ref::<Vec<String>>().unwrap()
+        self.store.get("PathParts").unwrap().downcast_ref::<Vec<String>>().unwrap()
     }
 }
 
