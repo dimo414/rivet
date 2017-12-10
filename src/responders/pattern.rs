@@ -15,20 +15,20 @@ lazy_static! {
 
 struct Route {
     path: regex::Regex,
-    callback: fn(regex::Captures, HashMap<&str, &str>) -> String
+    callback: fn(regex::Captures, &HashMap<String, String>) -> String
 }
 
 impl Route {
-    pub fn new(path: &str, callback: fn(regex::Captures, HashMap<&str, &str>) -> String) -> Route {
+    pub fn new(path: &str, callback: fn(regex::Captures, &HashMap<String, String>) -> String) -> Route {
         Route { path: regex::Regex::new(&format!("^{}$", path)).unwrap(), callback }
     }
 }
 
-fn handle(url_captures: regex::Captures, url_params: HashMap<&str, &str>) -> String {
+fn handle(url_captures: regex::Captures, url_params: &HashMap<String, String>) -> String {
     format!("pattern!\nURL captures: {:?}\nQuery args: {:?}", url_captures, url_params)
 }
 
-fn handle_foo(_url_captures: regex::Captures, url_params: HashMap<&str, &str>) -> String {
+fn handle_foo(_url_captures: regex::Captures, url_params: &HashMap<String, String>) -> String {
     format!("Foo!\nQuery args: {:?}", url_params)
 }
 

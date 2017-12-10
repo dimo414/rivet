@@ -34,14 +34,14 @@ fn dispatcher(url_parts: util::UrlParts) -> tiny_http::ResponseBox {
 
 fn root() -> String { "Try /path, /query, or /both".into() }
 
-fn params_only(params: Vec<&str>) -> String {
+fn params_only(params: &Vec<String>) -> String {
     format!("Params Only! {:?}", params)
 }
 
-fn query_only(query: HashMap<&str, &str>) -> String {
+fn query_only(query: &HashMap<String, String>) -> String {
     format!("Query Only! {:?}", query)
 }
 
-fn both(params: Vec<&str>, query: HashMap<&str, &str>) -> String {
+fn both(params: &Vec<String>, query: &HashMap<String, String>) -> String {
     format!("Params: {:?} and Query: {:?}", params, query)
 }

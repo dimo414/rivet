@@ -74,15 +74,12 @@ impl UrlParts {
         &self.path
     }
 
-    // TODO probably better to fix the Responder::handle method to take Vec<String>
-    pub fn path_components(&self) -> Vec<&str> {
-        // https://stackoverflow.com/a/33217302/113632
-        self.path_components.iter().map(AsRef::as_ref).collect()
+    pub fn path_components(&self) -> &Vec<String> {
+        &self.path_components
     }
 
-    // TODO probably better to fix the Responder::handle method to take HashMap<String, String>
-    pub fn query(&self) -> HashMap<&str, &str> {
-        self.query.iter().map(|(k, v)| (k.as_ref(), v.as_ref())).collect()
+    pub fn query(&self) -> &HashMap<String, String> {
+        &self.query
     }
 }
 
