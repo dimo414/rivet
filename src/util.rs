@@ -20,7 +20,7 @@ pub fn fail404(response: &str) -> tiny_http::ResponseBox {
 
 lazy_static! {
     static ref URL_SPLIT: regex::Regex = regex::Regex::new(r"^([^?]*)(?:\?(.*))?$").unwrap();
-    static ref PATH_SEGMENTS: regex::Regex = regex::Regex::new("/([^/]*)").unwrap();
+    static ref PATH_SEGMENTS: regex::Regex = regex::Regex::new("/([^/]+)").unwrap();
     static ref QUERY_SEGMENT: regex::Regex = regex::Regex::new("^([^=]*)(?:=(.*))?$").unwrap();
 }
 
@@ -48,6 +48,7 @@ pub struct UrlParts {
 
 impl UrlParts {
     pub fn new(url: &str) -> UrlParts {
+        if ! url.starts_with('/') { panic!("Invalid URL - must start with a /, was {}", url); }
         let url_split = URL_SPLIT.captures(url).unwrap();
         let path = &url_split[1];
         let query_str = url_split.get(2);
@@ -107,9 +108,15 @@ mod tests {
 
     #[test]
     fn split_url_empty() {
-        let parts = UrlParts::new("");
-        assert_eq!(parts.path, "");
+        let parts = UrlParts::new("/");
+        assert_eq!(parts.path, "/");
         assert_eq!(parts.path_components.len(), 0);
         assert_eq!(parts.query.len(), 0);
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid URL")]
+    fn split_url_panic() {
+        UrlParts::new("foo/bar/baz");
     }
 }

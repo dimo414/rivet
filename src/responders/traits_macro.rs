@@ -64,7 +64,7 @@ pub struct TraitsMacro {
 
 impl responders::Responder for TraitsMacro {
     fn handle(&self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
-        let url_parts = util::strip_url_prefix(request.url(), "/trait");
+        let url_parts = util::strip_url_prefix(request.url(), "/traits_macro");
 
         let deps = DI::new(move |store| {
             bind!(store, PathParts, url_parts.path_components);
