@@ -24,30 +24,36 @@ fn main() {
     let responders = {
         let mut m: HashMap<String, Box<responders::Responder>> = HashMap::new();
         m.insert("".into(), Box::new(RootResponder {}));
+        m.insert("closure".into(), Box::new(responders::closure::Closure {}));
         m.insert("pattern".into(), Box::new(responders::pattern::Pattern {}));
         m.insert("raw".into(), Box::new(responders::raw::Raw {}));
         m.insert("stringly".into(), Box::new(responders::stringly::Stringly {}));
-        m.insert("closure".into(), Box::new(responders::closure::Closure {}));
+        m.insert("traits".into(), Box::new(responders::traits::Traits {}));
+        m.insert("traits_macro".into(), Box::new(responders::traits_macro::TraitsMacro {}));
         m // now the map is immutable
     };
 
     // Start server
+    // OSX prompts to permit cargo to listen on a port every time `cargo run` is called
+    // https://apple.stackexchange.com/a/150711/69703 resolves this:
+    //   sudo codesign --force --deep --sign - $(which cargo)
     let server = Server::http("0.0.0.0:8000").unwrap();
     println!("server started: http://localhost:8000");
 
     // Single-threaded server - tiny_http supports multi-threading, but it's not necessary for the
     // initial proof-of-concept
     for request in server.incoming_requests() {
+        // TODO logging framework?
+        print!("received {:?} request for url {:?}", request.method(), request.url());
+
         // Fallback shutdown mechanism in case Ctrl+C isn't propagated properly.
         // According to https://github.com/rust-lang/cargo/issues/2343 it should be, but at least on
         // my system it's not working - might be https://github.com/rust-lang/cargo/issues/4575
         if request.url() == "/quit" {
             let _ = request.respond(util::success("Shutting Down!"));
+            println!();
             break;
         }
-
-        // TODO logging framework?
-        print!("received {:?} request for url {:?}", request.method(), request.url());
 
         // Lookup the right responder for the request
         let url_prefix = url_prefix(&request.url()).to_string();
@@ -86,6 +92,8 @@ impl responders::Responder for RootResponder {
             <li><a href=\"/stringly/foo/bar?baz\">Stringly</a> - pass in fixed request details</li>
             <li><a href=\"/pattern/foo/bar?baz\">Pattern</a> - route requests by regex patterns</li>
             <li><a href=\"/closure/both/bar?baz\">Closure</a> - route requests to user-specified closures</li>
+            <li><a href=\"/traits/bar?baz\">Traits</a> - DI pattern providing some type safety via traits</li>
+            <li><a href=\"/traits_macro/bar?baz\">Traits Macro</a> - same as above, but simplified by macros</li>
             </ul>"
         )
     }

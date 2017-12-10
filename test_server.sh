@@ -16,6 +16,8 @@ PATHS=(
   '/closure/parts/bar?baz'
   '/closure/paths/bar?baz'
   '/closure/both/bar?baz'
+  '/traits/bar?baz'
+  '/traits_macro/bar?baz'
 )
 
 expect() {
@@ -49,5 +51,5 @@ expect nc wget
 make_requests &
 trap 'kill %1' EXIT
 
-# Build and bring up server, make_requests will send requests once it's up and then kill the server
+# Build and bring up server, make_requests will send requests once it's up
 RUST_BACKTRACE=1 cargo run

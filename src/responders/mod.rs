@@ -2,6 +2,8 @@ pub mod closure;
 pub mod pattern;
 pub mod raw;
 pub mod stringly;
+pub mod traits;
+pub mod traits_macro;
 
 use tiny_http;
 
