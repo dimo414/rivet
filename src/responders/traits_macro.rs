@@ -66,15 +66,9 @@ impl responders::Responder for TraitsMacro {
     fn handle(&self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
         let url_parts = util::strip_url_prefix(request.url(), "/trait");
 
-        // TODO See comment in traits.rs
-        let list_copy: Vec<String> =
-            url_parts.path_components().iter().map(|s| s.to_string()).collect();
-        let map_copy: HashMap<String, String> =
-            url_parts.query().iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
-
         let deps = DI::new(move |store| {
-            bind!(store, PathParts, list_copy);
-            bind!(store, UrlParams, map_copy);
+            bind!(store, PathParts, url_parts.path_components);
+            bind!(store, UrlParams, url_parts.query);
         });
 
         util::success(&dispatch(&deps, &deps))

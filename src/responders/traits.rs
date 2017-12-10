@@ -27,17 +27,9 @@ struct DIMap {
 
 impl DIMap {
     fn new(url_parts: util::UrlParts) -> DIMap {
-        // TODO is there some way to use the values directly in the UrlParts struct?
-        // Note .path_components() currently returns a Vec<&str>, but even if it's changed to return
-        // &Vec<String> that doesn't solve the problem. Need a way to own the value from the struct.
-        let list_copy: Vec<String> =
-            url_parts.path_components().iter().map(|s| s.to_string()).collect();
-        let map_copy: HashMap<String, String> =
-            url_parts.query().iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
-
         let mut store = HashMap::new();
-        store.insert("PathParts".into(), Box::new(list_copy) as Box<Any>);
-        store.insert("UrlParams".into(), Box::new(map_copy) as Box<Any>);
+        store.insert("PathParts".into(), Box::new(url_parts.path_components) as Box<Any>);
+        store.insert("UrlParams".into(), Box::new(url_parts.query) as Box<Any>);
         DIMap { store }
     }
 }

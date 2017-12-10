@@ -40,9 +40,10 @@ pub fn strip_url_prefix(url: &str, expected_prefix: &str) -> UrlParts {
 
 #[derive(Debug)]
 pub struct UrlParts {
-    path: String,
-    path_components: Vec<String>,
-    query: HashMap<String, String>
+    pub path: String,
+    pub path_components: Vec<String>,
+    pub query: HashMap<String, String>,
+    _private: () // https://github.com/rust-unofficial/patterns/blob/master/idioms/priv-extend.md
 }
 
 impl UrlParts {
@@ -66,7 +67,7 @@ impl UrlParts {
             },
             None => HashMap::new()
         };
-        UrlParts {path: path.into(), path_components: url_components, query: url_query}
+        UrlParts {path: path.into(), path_components: url_components, query: url_query, _private:()}
     }
 
     #[allow(dead_code)]
@@ -74,13 +75,9 @@ impl UrlParts {
         &self.path
     }
 
-    pub fn path_components(&self) -> &Vec<String> {
-        &self.path_components
-    }
+    pub fn path_components(&self) -> &Vec<String> { &self.path_components }
 
-    pub fn query(&self) -> &HashMap<String, String> {
-        &self.query
-    }
+    pub fn query(&self) -> &HashMap<String, String> { &self.query }
 }
 
 #[cfg(test)]
@@ -104,8 +101,8 @@ mod tests {
         assert_eq!(parts.path, "/foo/bar/baz");
         assert_eq!(parts.path_components, vec!["foo", "bar", "baz"]);
         assert_eq!(parts.query.len(), 2);
-//        assert_eq!(parts.query.get("bing").unwrap(), "");
-//        assert_eq!(parts.query.get("bang").unwrap(), "boom");
+        assert_eq!(parts.query.get("bing").unwrap(), "");
+        assert_eq!(parts.query.get("bang").unwrap(), "boom");
     }
 
     #[test]
