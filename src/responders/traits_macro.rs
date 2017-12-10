@@ -1,5 +1,6 @@
 use responders;
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::any::Any;
 use tiny_http;
 use util;
@@ -26,14 +27,18 @@ macro_rules! binder {
 
 /// Used inside the closure passed to a "binder" constructor to bind instances.
 ///   Usage: bind!(store, BindingTrait, Binding)
-///     store:         Literal "store" - this is a leaky abstraction point
+///     Binder:        The argument to the binder's closure constructor
 ///     BindingTrait:  Trait which will provide Binding
 ///     Binding:       Instance to bind to the BindingTrait
 macro_rules! bind {
-    ($map:ident, $type:ident, $value:expr) => {
-        // TODO validate $map doesn't already contain $type
-        // TODO validate $value is of the appropriate type for $type
-        $map.insert(stringify!($type).into(), Box::new($value) as Box<Any>);
+    ($map:ident, $bnd:ident, $value:expr) => {
+        // TODO validate $value is of the appropriate type for $bnd
+        match $map.entry(stringify!($bnd).into()) {
+            Entry::Vacant(entry) => entry.insert(Box::new($value) as Box<Any>),
+            Entry::Occupied(_) =>
+                // TODO include the existing binding in the error
+                panic!("Conflicting binding for {}, cannot bind to {:?}", stringify!($bnd),  $value)
+        }
     }
 }
 
@@ -51,7 +56,7 @@ macro_rules! binding {
                 match self.store.get(stringify!($name).into()) {
                     Some(dep) => dep.downcast_ref::<$ty>().unwrap(),
                     None => panic!("{} has no binding for {}!\n\t{:?}\n",
-                         stringify!($store), stringify!($name), self.store)
+                         stringify!($store), stringify!($name), self.store.keys())
                 }
             }
         }
@@ -94,9 +99,9 @@ impl responders::Responder for TraitsMacro {
     fn handle(&self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
         let url_parts = util::strip_url_prefix(request.url(), "/traits_macro");
 
-        let deps = DI::new(move |store| {
+        let deps = DI::new(move |binder| {
             // note that we can't bind anything directly from request, since DI would then own it
-            bind!(store, UrlParts, url_parts);
+            bind!(binder, UrlParts, url_parts);
         });
 
         util::success(&dispatch(&deps, &deps))
