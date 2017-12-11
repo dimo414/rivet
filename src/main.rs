@@ -95,6 +95,7 @@ impl responders::Responder for RootResponder {
             <li><a href=\"/closure/both/bar?baz\">Closure</a> - route requests to user-specified closures</li>
             <li><a href=\"/traits/bar?baz\">Traits</a> - DI pattern providing some type safety via traits</li>
             <li><a href=\"/traits_macro/bar?baz\">Traits Macro</a> - same as above, but simplified by macros</li>
+            <li><a href=\"/factory/both\">Factory</a> - DI pattern using generic factory</li>
             </ul>"
         )
     }
