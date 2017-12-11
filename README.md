@@ -12,6 +12,8 @@ Access server at http://localhost:8000
 If Ctrl+C isn't sufficient to kill the server (this seems to be the case on Windows) visit
 [/quit](http://localhost:8000/quit) to kill the server.
 
+Run `./test_server.sh` to valdidate the server's runtime behavior (namely, that it doesn't panic).
+
 ## Resources
 
 * [`tiny_http` docs](https://tiny-http.github.io/tiny-http/tiny_http)
