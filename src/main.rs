@@ -25,6 +25,7 @@ fn main() {
         let mut m: HashMap<String, Box<responders::Responder>> = HashMap::new();
         m.insert("".into(), Box::new(RootResponder {}));
         m.insert("closure".into(), Box::new(responders::closure::Closure {}));
+        m.insert("factory".into(), Box::new(responders::factory::Factory {}));
         m.insert("pattern".into(), Box::new(responders::pattern::Pattern {}));
         m.insert("raw".into(), Box::new(responders::raw::Raw {}));
         m.insert("stringly".into(), Box::new(responders::stringly::Stringly {}));

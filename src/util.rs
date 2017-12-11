@@ -38,7 +38,7 @@ pub fn strip_url_prefix(url: &str, expected_prefix: &str) -> UrlParts {
     UrlParts::new(strip_prefix(url, expected_prefix))
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UrlParts {
     pub path: String,
     pub path_components: Vec<String>,

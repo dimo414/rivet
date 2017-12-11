@@ -1,4 +1,5 @@
 pub mod closure;
+pub mod factory;
 pub mod pattern;
 pub mod raw;
 pub mod stringly;
