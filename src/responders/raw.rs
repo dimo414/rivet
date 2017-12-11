@@ -6,7 +6,9 @@ use util;
 pub struct Raw {}
 
 impl responders::Responder for Raw {
-    fn handle(&self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
+    fn new() -> Raw { Raw {} }
+
+    fn handle(& mut self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
         util::success(&format!("Raw! {}", util::strip_prefix(request.url(), "/raw")))
     }
 }

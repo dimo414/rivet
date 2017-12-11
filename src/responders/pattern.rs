@@ -37,7 +37,9 @@ pub struct Pattern {
 }
 
 impl responders::Responder for Pattern {
-    fn handle(&self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
+    fn new() -> Pattern { Pattern {} }
+
+    fn handle(& mut self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
         let url_parts = util::strip_url_prefix(request.url(), "/pattern");
 
         for route in ROUTES.iter() {
