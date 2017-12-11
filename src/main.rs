@@ -1,4 +1,6 @@
 #[macro_use] extern crate lazy_static;
+#[macro_use] mod macros;
+
 extern crate regex;
 extern crate tiny_http;
 
