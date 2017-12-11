@@ -35,7 +35,8 @@ pub fn strip_prefix<'a>(s: &'a str, expected_prefix: &str) -> &'a str {
 }
 
 pub fn strip_url_prefix(url: &str, expected_prefix: &str) -> UrlParts {
-    UrlParts::new(strip_prefix(url, expected_prefix))
+    let suffix = strip_prefix(url, expected_prefix);
+    UrlParts::new(if suffix.is_empty() { "/" } else { suffix })
 }
 
 #[derive(Debug, Clone)]
@@ -97,7 +98,7 @@ mod tests {
     }
 
     #[test]
-    fn split_url_basic() {
+    fn urlparts_basic() {
         let parts = UrlParts::new("/foo/bar/baz?bing&bang=boom");
         assert_eq!(parts.path, "/foo/bar/baz");
         assert_eq!(parts.path_components, vec!["foo", "bar", "baz"]);
@@ -107,7 +108,7 @@ mod tests {
     }
 
     #[test]
-    fn split_url_empty() {
+    fn urlparts_empty() {
         let parts = UrlParts::new("/");
         assert_eq!(parts.path, "/");
         assert_eq!(parts.path_components.len(), 0);
@@ -116,7 +117,14 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "Invalid URL")]
-    fn split_url_panic() {
+    fn urlparts_panic() {
         UrlParts::new("foo/bar/baz");
+    }
+
+    #[test]
+    fn split_url_basic() {
+        assert_eq!(strip_url_prefix("/foo", "/foo").path, "/");
+        assert_eq!(strip_url_prefix("/foo/", "/foo").path, "/");
+        assert_eq!(strip_url_prefix("/foo/bar", "/foo").path, "/bar");
     }
 }
