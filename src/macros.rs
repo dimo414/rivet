@@ -87,6 +87,42 @@ macro_rules! provider {
     }
 }
 
+// Invokes a func with n repetitions of the given argument
+/// See also http://danielkeep.github.io/tlborm/book/pat-push-down-accumulation.html, but I don't
+/// think that pattern makes this use-case much cleaner. And
+/// https://stackoverflow.com/q/33173235/113632.
+/// Also posted to https://stackoverflow.com/q/47767910/113632
+macro_rules! call_n {
+    ($func:ident, $arg:expr, 0) => { $func() };
+    ($func:ident, $arg:expr, 1) => { $func($arg) };
+    ($func:ident, $arg:expr, 2) => { $func($arg, $arg) };
+    ($func:ident, $arg:expr, 3) => { $func($arg, $arg, $arg) };
+}
+
+/// Support arbitrary injections by wrapping a call to the given func in a closure that takes a
+/// BinderType and passes it to all parameters of the function.
+///   Usage: inject(BinderType, InjectedFunction, NumArguments
+///     BinderType:        A binder type, created by binder!()
+///     InjectedFunction:  A function that takes 0 or more arguments, all of BinderType traits
+///     NumArguments:      The number of arguments the function takes
+#[allow(unused_macros)]
+macro_rules! inject {
+    ($store:ident, $func:ident, $num_args:tt) => {
+        |_deps: &$store| util::success(&call_n!($func, _deps, $num_args))
+    };
+}
+/// Same as inject!, but the closure is Boxed
+#[allow(unused_macros)]
+macro_rules! inject_box {
+    ($store:ident, $func:ident, $num_args:tt) => { Box::new(inject!($store, $func, $num_args)) }
+}
+/// Same as inject!, but transforms the result into a ResponseBox too
+macro_rules! inject_http_success {
+    ($store:ident, $func:ident, $num_args:tt) => {
+        Box::new(|_deps: &$store| util::success(&call_n!($func, _deps, $num_args)))
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
