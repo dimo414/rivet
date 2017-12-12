@@ -14,5 +14,7 @@ use tiny_http;
 /// For example, a plugin might support parsing data out of the URL path and provide those values
 /// to the callback.
 pub trait Responder {
-    fn handle(&self, &tiny_http::Request) -> tiny_http::ResponseBox;
+    // NOTE: https://doc.rust-lang.org/error-index.html#method-has-no-receiver
+    fn new() -> Self where Self: Sized;
+    fn handle(& mut self, &tiny_http::Request) -> tiny_http::ResponseBox;
 }

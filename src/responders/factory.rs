@@ -3,6 +3,8 @@ use tiny_http;
 use util;
 use std::collections::HashMap;
 use std::any::Any;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 struct Container {
     constructors: HashMap<String, Box<Any>>,
@@ -57,43 +59,24 @@ impl<T: Clone> Builder<T> for T {
 }
 
 pub struct Factory {
+  container: Container,
 }
 
 impl responders::Responder for Factory {
-    fn handle(&self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
+    fn new() -> Factory {
+      let mut c = Container::new();
+      let count = Rc::new(RefCell::new(0));
+      c.add("count", count);
+      Factory { container: c }
+    }
+
+    fn handle(&mut self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
         let url_parts = util::strip_url_prefix(request.url(), "/factory");
 
-        let mut container = Container::new();
-        container.add("url_parts", url_parts);
-        dispatcher(&container)
+        self.container.add("url_parts", url_parts);
+        let count: Rc<RefCell<i32>> = self.container.resolve("count");
+        *count.borrow_mut() += 1;
+        util::success(&format!("Count {:?}", count))
     }
 }
 
-fn dispatcher(container: &Container) -> tiny_http::ResponseBox {
-    let u: util::UrlParts  = container.resolve("url_parts");
-    let cb: Box<Fn() -> tiny_http::ResponseBox> = match u.path_components().get(0) {
-        Some(path) => match path.as_ref() {
-            "path" => Box::new(|| util::success(&params_only(u.path_components()))),
-            "query" => Box::new(|| util::success(&query_only(u.query()))),
-            "both" => Box::new(|| util::success(&both(u.path_components(), u.query()))),
-            _ => Box::new(|| util::fail404("Not found!"))
-        },
-        None => Box::new( || util::success(&root()))
-    };
-
-    cb()
-}
-
-fn root() -> String { "Try /path, /query, or /both".into() }
-
-fn params_only(params: &Vec<String>) -> String {
-    format!("Params Only! {:?}", params)
-}
-
-fn query_only(query: &HashMap<String, String>) -> String {
-    format!("Query Only! {:?}", query)
-}
-
-fn both(params: &Vec<String>, query: &HashMap<String, String>) -> String {
-    format!("Params: {:?} and Query: {:?}", params, query)
-}

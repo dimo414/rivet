@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use tiny_http::{Server};
 
 mod responders;
+use responders::Responder;
 mod util;
 
 /// Server entry point - starts up a web server and routes requests to the known responders.
@@ -23,11 +24,11 @@ mod util;
 /// code paths registered with the `NicePlugin` responder.
 fn main() {
     // Register responders here
-    let responders = {
+    let mut responders = {
         let mut m: HashMap<String, Box<responders::Responder>> = HashMap::new();
         m.insert("".into(), Box::new(RootResponder {}));
         m.insert("closure".into(), Box::new(responders::closure::Closure {}));
-        m.insert("factory".into(), Box::new(responders::factory::Factory {}));
+        m.insert("factory".into(), Box::new(responders::factory::Factory::new()));
         m.insert("pattern".into(), Box::new(responders::pattern::Pattern {}));
         m.insert("raw".into(), Box::new(responders::raw::Raw {}));
         m.insert("stringly".into(), Box::new(responders::stringly::Stringly {}));
@@ -60,7 +61,7 @@ fn main() {
 
         // Lookup the right responder for the request
         let url_prefix = url_prefix(&request.url()).to_string();
-        let response = match responders.get(&url_prefix) {
+        let response = match responders.get_mut(&url_prefix) {
             Some(responder) => {
                 if url_prefix.len() > 0 { print!(" - routed to {}", url_prefix); }
                 responder.handle(&request)
@@ -87,7 +88,9 @@ fn url_prefix(url: &str) -> &str {
 /// A responder for the homepage (`/`)
 struct RootResponder {}
 impl responders::Responder for RootResponder {
-    fn handle(&self, _request: &tiny_http::Request) -> tiny_http::ResponseBox {
+    fn new() -> RootResponder { RootResponder {} }
+
+    fn handle(&mut self, _request: &tiny_http::Request) -> tiny_http::ResponseBox {
         // TODO better names / clearer descriptions
         util::success_html(
             "<ul>
@@ -97,7 +100,7 @@ impl responders::Responder for RootResponder {
             <li><a href=\"/closure/both/bar?baz\">Closure</a> - route requests to user-specified closures</li>
             <li><a href=\"/traits/bar?baz\">Traits</a> - DI pattern providing some type safety via traits</li>
             <li><a href=\"/traits_macro/bar?baz\">Traits Macro</a> - same as above, but simplified by macros</li>
-            <li><a href=\"/factory/both\">Factory</a> - DI pattern using generic factory</li>
+            <li><a href=\"/factory/\">Factory</a> - DI pattern using generic factory</li>
             </ul>"
         )
     }
