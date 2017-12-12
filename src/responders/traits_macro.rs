@@ -15,8 +15,6 @@ provider!(DI, PathParts, Vec<String>, UrlParts, |d: &'a UrlParts| d.get().path_c
 provider!(DI, UrlParams, HashMap<String, String>, UrlParts, |d: &'a UrlParts| d.get().query());
 
 impl responders::Responder for TraitsMacro {
-    fn new() -> TraitsMacro { TraitsMacro {} }
-
     fn handle(&mut self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
         let url_parts = util::strip_url_prefix(request.url(), "/traits_macro");
 
