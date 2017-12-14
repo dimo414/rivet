@@ -62,14 +62,16 @@ pub struct Factory {
   container: Container,
 }
 
-impl responders::Responder for Factory {
-    fn new() -> Factory {
-      let mut c = Container::new();
-      let count = Rc::new(RefCell::new(0));
-      c.add("count", count);
-      Factory { container: c }
+impl Factory {
+    pub fn new() -> Factory {
+        let mut c = Container::new();
+        let count = Rc::new(RefCell::new(0));
+        c.add("count", count);
+        Factory { container: c }
     }
+}
 
+impl responders::Responder for Factory {
     fn handle(&mut self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
         let url_parts = util::strip_url_prefix(request.url(), "/factory");
 

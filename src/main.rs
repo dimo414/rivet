@@ -8,7 +8,6 @@ use std::collections::HashMap;
 use tiny_http::{Server};
 
 mod responders;
-use responders::Responder;
 mod util;
 
 /// Server entry point - starts up a web server and routes requests to the known responders.
@@ -24,6 +23,7 @@ mod util;
 /// code paths registered with the `NicePlugin` responder.
 fn main() {
     // Register responders here
+    // TODO responders should be immutable
     let mut responders = {
         let mut m: HashMap<String, Box<responders::Responder>> = HashMap::new();
         m.insert("".into(), Box::new(RootResponder {}));
@@ -88,8 +88,6 @@ fn url_prefix(url: &str) -> &str {
 /// A responder for the homepage (`/`)
 struct RootResponder {}
 impl responders::Responder for RootResponder {
-    fn new() -> RootResponder { RootResponder {} }
-
     fn handle(&mut self, _request: &tiny_http::Request) -> tiny_http::ResponseBox {
         // TODO better names / clearer descriptions
         util::success_html(

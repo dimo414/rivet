@@ -9,10 +9,6 @@ pub struct Closure {
 }
 
 impl responders::Responder for Closure {
-    fn new() -> Closure {
-      Closure {}
-    }
-
     fn handle(& mut self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
         let url_parts = util::strip_url_prefix(request.url(), "/closure");
 

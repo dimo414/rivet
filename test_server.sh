@@ -17,8 +17,8 @@ PATHS=(
   '/closure/paths/bar?baz'
   '/closure/both/bar?baz'
   '/traits/bar?baz'
-  '/traits_macro/bar?baz'
-  '/factory'
+  '/traits_macro/all/bar?baz'
+  '/factory/both/foo?bar'
 )
 
 expect() {

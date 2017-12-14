@@ -9,8 +9,6 @@ pub struct Stringly {
 }
 
 impl responders::Responder for Stringly {
-    fn new() -> Stringly { Stringly {} }
-
     fn handle(& mut self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
         let url_parts = util::strip_url_prefix(request.url(), "/stringly");
 
