@@ -1,0 +1,17 @@
+binder!(DepStore);
+binding!(DepStore, UrlParts, util::UrlParts);
+provider!(DepStore, PathParts, Vec<String>,
+    UrlParts, |d: &'a UrlParts| d.get().path_components());
+provider!(DepStore, UrlParams, HashMap<String, String>,
+    UrlParts, |d: &'a UrlParts| d.get().query());
+
+fn handle(&self, request: &Request) -> ResponseBox {
+    // struct containing both the path and the query
+    let url_parts = ...;
+    
+    let deps = DepStore::new(move |binder| {
+        bind!(binder, UrlParts, url_parts);
+    });
+
+    user_func(&deps, ...)
+}

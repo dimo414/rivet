@@ -1,0 +1,19 @@
+struct Construct<'a, T> {
+    build: Box<Builder<T> + 'a>,
+}
+
+impl<'a, T> Construct<'a, T> {
+    fn c(&self) -> T {
+        self.build.c()
+    }
+}
+
+trait Builder<T> {
+    fn c(&self) -> T;
+}
+
+impl<T: Clone> Builder<T> for T {
+    fn c(&self) -> T {
+        self.clone()
+    }
+}

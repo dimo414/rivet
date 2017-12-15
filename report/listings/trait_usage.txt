@@ -1,0 +1,11 @@
+fn handle(&self, request: &Request) -> ResponseBox {
+    let deps = DepStore::new(...);
+    util::success(&dispatch(&deps, &deps))
+}
+
+fn dispatch<P: PathParts, Q: Query>
+        (path: &P, query: &Q) -> String {
+    let path = path.get();
+    let query = query.get();
+    ...
+}

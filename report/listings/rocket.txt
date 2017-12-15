@@ -1,0 +1,19 @@
+struct HitCount(AtomicUsize);
+
+#[get("/")]
+fn index(hit_count: State<HitCount>) -> &'static str {
+  hit_count.0.fetch_add(1, Ordering::Relaxed);
+  "Your visit has been recorded!"
+}
+
+#[get("/count")]
+fn count(hit_count: State<HitCount>) -> String {
+  hit_count.0.load(Ordering::Relaxed).to_string()
+}
+
+fn main() {
+  rocket::ignite()
+    .mount("/", routes![index, count])
+    .manage(HitCount(AtomicUsize::new(0)))
+    .launch()
+}

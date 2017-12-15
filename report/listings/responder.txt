@@ -1,0 +1,5 @@
+use tiny_http::{Request, ResponseBox};
+
+pub trait Responder {
+    fn handle(& self, &Request) -> ResponseBox;
+}

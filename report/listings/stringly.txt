@@ -1,0 +1,2 @@
+fn respond(url_parts: &Vec<String>,
+           query_params: &HashMap<String, String>) -> String

@@ -1,0 +1,16 @@
+pub struct Scope<T> {
+    pub parent: T,
+    children: Vec<Box<Any>>,
+}
+
+pub trait Resolve<T> {
+    fn resolve(self, s: &str, deps: &Dependencies)
+      -> Scope<T>;
+}
+
+impl<T: Any> Resolve<T> for T {
+    fn resolve(self, s: &str, deps: &Dependencies)
+      -> Scope<T> {
+        deps.run_constructors(s, self)
+    }
+}

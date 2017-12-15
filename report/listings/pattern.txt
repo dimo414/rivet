@@ -1,0 +1,21 @@
+lazy_static! {
+    // Note that the order matters -
+    // the first matched pattern will be used
+    static ref ROUTES: Vec<Route> = vec![
+        Route::new("/foo/([^/]*)", handle_foo),
+        Route::new("/bar/(\\d+)", handle_bar),
+        Route::new("", handle_root)
+    ];
+}
+
+struct Route {
+    path: regex::Regex,
+    callback: fn(&regex::Captures, &HashMap<String, String>)
+        -> String
+}
+
+fn handle_foo(path_captures: &regex::Captures,
+        query_params: &HashMap<String, String>) -> String {
+    format!("Captures: {:?}\nQuery Params: {:?}",
+        url_captures, url_params)
+}

@@ -1,0 +1,273 @@
+\documentclass[sigconf]{acmart}
+
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{url}
+
+\lstset{
+  frame=top,frame=bottom,
+  showstringspaces=false,
+  formfeed=newpage,
+  tabsize=4,
+  commentstyle=itshape,
+  basicstyle=\ttfamily\footnotesize,
+  morekeywords={pub, public, private, class, var, mut, self, fn, impl, struct, match, where, move, let, trait, static, ref}
+}
+
+\def\code#1{\lstinline{#1}}
+
+\begin{document}
+\title{CS242 Final Report}
+\subtitle{Rivet: Dependency Injection in Rust}
+
+\author{Michael Diamond}
+\affiliation{}
+\email{diamondm@stanford.edu}
+
+\author{Matthew Vilim}
+\affiliation{}
+\email{mvilim@stanford.edu}
+
+\maketitle
+
+\section{Summary}
+
+Rust's strict compile-time semantics make approaches that are often straightforward in other modern languages significantly more difficult or less intuitive. Rust's concepts of ownership and data lifetimes, along with its limited runtime reflection support constrain users hoping to design loosely coupled and pluggable applications. We explored various approaches to the strategy pattern\cite{wiki:strategy-pattern} and dependency injection\cite{wiki:di} (DI) in Rust, providing a qualitative evaluation of each, discussing their strengths and weaknesses. We rank each approach explored in terms or several metrics: safety, expressiveness, flexibility, maintainability, and debugability. We created a pluggable web server framework, called Rivet, as a testbed to explore and demonstrate these different approaches, and identified several promising strategies and areas for future research.
+
+\section{Background}
+
+As software applications grow in size, tightly-coupled dependencies between conceptually isolated components introduces cognitive overhead and unnecessary complexity, forcing developers to understand large swaths of the application in order to safely make further changes to any part of the system.
+
+The strategy pattern is a useful tool for combating tight coupling; by registering distinct components with a centralized dispatcher each component can be developed in isolation. The dispatcher takes responsibility for application-wide tasks such as managing resource contention, but routes units of work to the appropriate strategy for processing. This allows the dispatcher to remain decoupled from the actual work that needs to be done, and the individual strategies do not require any awareness of each other.
+
+However, this pattern introduces two significant issues. First, it requires all strategies implement the same API(s) in order for the dispatcher to be able to invoke them (e.g. Java's \code{Runnable} interface), which constrains the flexibility of the plugin's APIs and often requires the use of a monolithic ``\code{StrategyContext}'' type that contains any information a strategy might possibly need. Second, it doesn't resolve the issue of tight-coupling in the form of global state. Any data or resources not provided by the dispatcher generally can only be retrieved from the application's global state. This leads to brittle, difficult to test code that cannot be decoupled from the application's full behavior.
+
+Dependency injection is a technique widely employed to address both of these concerns. At a high level dependency injection is a type of inversion of control (IoC) --- code is \textit{handed} the resources and data it depends on, rather than constructing or owning it directly.
+
+A simple example of code not using dependency injection is shown Listing \ref{lst:di1}. A corresponding implementation using DI is shown in Figure \ref{lst:di2}.
+
+\begin{minipage}{\linewidth}
+\lstinputlisting[caption={Dependency is tightly-coupled to its usage},label={lst:di1}]{listings/di_example1.txt}
+\end{minipage}
+
+\begin{minipage}{\linewidth}
+\lstinputlisting[caption={Loosely-coupled, dependencies are passed in},label={lst:di2}]{listings/di_example2.txt}
+\end{minipage}
+
+Decoupling resource construction from where it's used makes \code{DatabaseUpdater} simpler to work with, but it has only offloaded the task of actually constructing the \code{Database} to some other part of the application. Manually constructing all necessary dependencies and passing them in is possible but can quickly become tedious and error-prone. In order to address this issue, dependency injection frameworks exist to support recursive dependency resolution. The dependency ``factory'' knows how to generate an object and all its dependencies, limiting the dependency construction information to single place far away from where the dependencies will be used. 
+
+\subsection{Webservers}
+
+Developing a web server (or any sort of RPC server) is a classic use case for a strategy pattern as it enables developers to separate the role of the server framework (receiving requests and sending responses) from how those individual requests are handled. Individual request paths (e.g. \lstinline{/foo.html} and \lstinline{/bar?baz=true}) can be processed by entirely isolated units of code, which have no knowledge of each other or any other paths that the server is able to handle. These requests may also be structurally different and require different dependencies in order to be properly completed; therefore, a flexible dependency injection pattern allows individual strategies to work with just the dependencies they need.
+
+Many modern open source web frameworks take this approach\footnote{Contrast this with languages like PHP which take a one-script-per-page approach, or lower-level tools that simply accept requests and return responses, without any meaningful dispatching, decoupling, or type-safety.}, including Python's Django and web.py projects, which allow individual plugins to separately specify the data they require from the request, rather than conforming to a single (or finite) API. For example, web.py allows arbitrary URL ``chunks'' to be passed as arguments to a plugin's handler function.
+
+There are also several existing web frameworks for Rust\cite{github:rust-frameworks} (in different stages of development), notably including Rocket\cite{rocket} which we investigated as it implements an elegant strategy and dependency injection pattern.
+
+\subsection{Prior Art} \label{prior-art}
+
+Several dependency injection approaches have already been created for Rust~\cite{rust-ioc}~\cite{di-rs}~\cite{hypospray}, however these projects all appear to be experimental with varying robustness. To our knowledge there is not a general-purpose DI library developers can incorproate into their applications today.
+
+\begin{itemize}
+\item \textbf{rust-ioc} This project provides a factory container with support for resolving a dependency graph at compile time; this crate is the most well-maintained and documented. A full summary of its features is available at \url{https://github.com/KodrAus/rust-ioc/blob/master/README.md}.
+\item \textbf{di-rs} This repository provides DI with a slight twist inspired by a JavaScript framework\cite{inceptor}; it supports restricted lifetimes with scoping as discussed in Section \ref{scope} and provides multi-threaded support.
+\item \textbf{hypospray} This project looked the most promising in terms of features and expressibility and is the only of the three to use code generation; however, the project is broken\footnote{https://github.com/jonysy/hypospray/issues/3} and no longer seems to be maintained. Dependency graphs are checked at compile time, and it supports injecting up to five dependencies at a time\footnote{\url{https://github.com/jonysy/hypospray/blob/2de8cb698/src/graph/ext.rs\#L130}}.
+\end{itemize}
+
+Rocket is notable also as it provides a generic plugin mechanism that relies on code generation to automatically create the coupling between the user's decoupled components. Rocket also provides a DI factory API they call \textit{Managed State}\footnote{https://rocket.rs/guide/state/}, an example of which is shown in Listing \ref{lst:rocket}. This example indicates the decoupling that Rocket's code generation provides; the \lstinline{index} and \lstinline{count} functions are injected with a user-defined structure \lstinline{HitCount}, receiving only the data they need to complete the request.
+
+\begin{minipage}{\linewidth}
+\lstinputlisting[caption={Example of Rocket's \textit{Managed State} interface},label={lst:rocket}]{listings/rocket.txt}
+\end{minipage}
+
+As a concrete example of where Rust developers might need Dependency Injection, Rocket's lead developer Sergio Benitez directed us to an open issue\footnote{https://github.com/SergioBenitez/Rocket/issues/167} tracking implementing some sort of solution for dependencies which require configuration (such as database connections). Presently in Rust and Rocket the experience here is fairly poor because existing approaches rely heavily on code generation, which means in order to reconfigure such resources (e.g. update the database connection information) the application must be recompiled. At this time this remains an open feature request for Rocket, but the specified behavior boils down to runtime dependency injection using data that is not known at compile time.
+
+\section{Approach}
+
+Using the \code{tiny-http}\cite{github:tiny-http} Rust HTTP library as a starting point we implemented a server meta-framework that allowed us to explore different strategy patterns and dependency injection mechanisms. \code{tiny-http} represents each HTTP request and response via a pair of structs appropriately named \code{Request} and \code{Response}. These encapsulate everything the server developer might need to inspect or mutate, but they're fairly difficult to work with in practice unless all valid requests are homogeneous (e.g. serving static content from disk, based solely on the URL). Heterogeneous request handling (e.g. different ``sections'' of a website serving separate types of content) calls for a more elegant decoupling.
+
+We defined a simple \code{Responder} trait, shown in Listing \ref{lst:responder}, which our different approaches would implement, in order to first decouple the server's low-level request processing from the approaches that would handle individual requests.
+
+\begin{minipage}{\linewidth}
+\lstinputlisting[caption={The meta-framework's \code{Responder} trait},label={lst:responder}]{listings/responder.txt}
+\end{minipage}
+
+A simple routing mechanism, keyed off the first \code{/}-delimited segment of the requested URL, was used to dispatch requests to individual responders. These responders, in turn, exposed some \textit{different} (and ideally better) API than the \code{Request} and \code{Response} structs for handling the requests routed to them.
+
+For the sake of simplicity, our examples primarily looked at ways of providing the URL's path and query parameters more cleanly. Our approaches could be expanded to any other request/response data (HTTP method, hostname, cookies, headers, etc.) or other dependencies (such as database hooks) by simply replicating what was done for the path and query data. Where that isn't the case is called out below as a disadvantage.
+
+\subsection{Qualitative Metrics}
+
+Fundamentally our investigation is subjective --- which approaches make for a better development experience than simply processing raw requests, while also working within Rust's constraints and following its best practices.
+
+In order to be somewhat qualitative and offer a more meaningful result than simply ``better'' or ``worse'' we identified five axes on which our approaches will be compared. In many cases these axes are at odds with each other --- for example an API that offers greater flexibility will generally sacrifice safety or maintainability in order to do so.
+
+\begin{itemize}
+\item \textbf{Safety} How error-prone is the approach? (e.g whether issues cause compile-time failures or runtime failures, or introduce overhead such as suboptimal memory lifecycles)
+\item \textbf{Expressiveness} How easy is it to work within the framework? (e.g. minimal boilerplate or linguistic constraints)
+\item \textbf{Flexibility} How easy is it to add new dependencies with minimal change? Are there constraints on the types of dependencies or their lifetimes?
+\item \textbf{Maintainability} The ability to make changes to certain code paths without fear of affecting other paths
+\item \textbf{Debug-ability} Being able to clearly diagnose failures and their root causes
+\end{itemize}
+
+A summary of our results in terms of these axes is depicted in Table \ref{tab:di_comp}.
+ 
+\begin{table*}
+  \caption{Qualitative comparison of differing mechanisms investigated}
+  \label{tab:di_comp}
+  \begin{tabular}{l*{4}{c}r}
+    \toprule
+    Approach & Safety & Expressiveness & Flexibility & Maintainability & Debugability \\
+    \midrule
+    Simplified & low & low & none & low & moderate\\
+    Pattern & moderate & moderate $\rightarrow$ high & low & high & high\\
+    Closure & high & low $\rightarrow$ moderate & moderate & high & moderate\\
+    Factory & moderate & low & low & moderate & low\\
+    Scope & high & low & low & moderate & low\\
+    Traits & high & high & moderate & high & low $\rightarrow$ moderate\\
+  \bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Simplified}
+
+Our first step was to simply hide the \code{Request} object, as it's much larger and more cumbersome than many applications need. For simple use-cases it could be sufficient to simply pull out the basic information the developer needs and provide it to them via a more expressive API --- specifically:
+
+\begin{minipage}{\linewidth}
+\lstinputlisting[caption={A simpler API},label={lst:stringly}]{listings/stringly.txt}
+\end{minipage}
+
+Hiding the \code{Request} and \code{Response} types like this gives the user a safer API --- they don't have to worry about the HTTP spec or other complexities of a general-purpose server. Instead, they simply process the URL and generate a string response, which the framework converts into a proper HTTP response.
+
+However, it offers little type-safety beyond what \code{Request} already provided, and notably is a far more severely rigid API. There's no mechanism to expose additional data or dependencies (such as request cookies) short of redefining the function's API. In addition to being inflexible, it provides no way for the user to compartmentalize different request types and requires the user to write boilerplate (such as an if-else chain) to handle such requests separately, leading to difficult to maintain and overly-verbose code. Any sort of URL parsing (e.g. extracting a numeric identifier from the path) must be done manually, which is both tedious and error-prone.
+
+While broadly unsuitable, this example demonstrates the general principle of hiding the HTTP layer from the user, and there are low-hanging-fruit to resolve some of the concerns above.
+
+\subsection{Pattern}
+
+The first improvement is to make request routing a feature of the framework, rather than something the user is responsible for. To do so, we created a registry of regular expressions matching different URL patterns and paired this with a callback function \code{fn(\&regex::Captures, \&HashMap<String, String>) -> String} which would be invoked if the request URL matched the given pattern.
+
+\begin{minipage}{\linewidth}
+\lstinputlisting[caption={Using patterns to route heterogenous requests},label={lst:pattern}]{listings/pattern.txt}
+\end{minipage}
+
+While this has a similar type signature to the ``Simplified'' approach, it's far more expressive and maintainable, as users can specify arbitrary segmenting of the request space to be sent to different callbacks. These callbacks do not need to be aware of one another or interact in any way, making ongoing maintenance much simpler and safer. Furthermore, (as we'll see in subsequent examples) users have some flexibility in how their code is invoked. While adding additional dependencies to this callback API is non-trivial, it's possible to expand this approach to permit closures as callbacks, which allows users to exclude unnecessary parameters, for example, using \code{\|captures\, \_params\| simple\_handler(captures)} allows the \code{simple_handler} function to only depend on the data it actually depends on, not the whole request.
+
+Similarly, by using capturing groups of a regular expression rather than the raw URL path, the user has more confidence that the requests they're handling are well-formed and can be safely processed. For instance, the \code{handle_bar} handler above can be confident that it will always be invoked with a capture parameter containing exactly one group consisting of digits. This could be made even more type-safe and expressive with a higher-level pattern matching abstraction that validates and parses the captured inputs before invoking the user's callback.
+
+By routing requests and validating them before invoking the user's callback, the framework is easier to debug as well. While users are still responsible for some amount of input processing, the majority is handled by the framework, and runtime errors (such as failing to parse an invalid input that makes it past the regular expression) can be handled with standard Rust idioms such as \code{match}'ing the parse results.
+
+\subsection{Closure}
+
+From here we clearly needed to investigate more flexible options --- dependency injection. We started by looking at an existing pattern implemented by rust-ioc\footnote{\url{https://github.com/KodrAus/rust-ioc/blob/master/factories}} (the ``ioc'' referring to ``inversion of control''), which they achieve by using closures to separate construction from invocation. By taking this approach we were able (with a little boilerplate) to support arbitrary user-defined functions:
+
+\begin{minipage}{\linewidth}
+\lstinputlisting[caption={Passing dependencies via closures},label={lst:closure}]{listings/closure.txt}
+\end{minipage}
+
+The \code{handle} function is responsible for pulling out any data or other resources from the request, then dispatching\footnote{for brevity here we simpy routed requests based on the first segment of the URL path, but a proper implementation could take advantage of the more powerful pattern-based dispatching described above.} the request to the appropriate callback. With this technique we're able to use a single simple callback signature (no explicit arguments) but pass in whatever parameters the user expects by closing over the values. Unlike our prior approaches, this is very flexible. Not only can the user cleanly define whatever function signature(s) they'd like to use, but furthermore, there are no changes required to the existing functions if additional data is made available in the future.
+
+In this implementation the dense closure boilerplate somewhat impacts the expressiveness of the approach, but this block could conceptually be generated by a script, macro, codegen, or other tool, as each line takes the same form based on the arguments of the function being called. Instead of manually listing all matches in one place each function could be annotated with the path or pattern it's intended to be invoked with, and the \code{handle} function would be generated based on the annotation and function parameters.
+
+This approach would come with some tradeoffs, notably if the dispatching logic is being generated, it will be difficult for users to trace. Additionally, it could constrain what types could be dynamically injected, since the code inspection would need to be able to determine which instances should be injected based solely on the function signature. If two values with the same type needed to be injected, some more cumbersome mechanism to differentiate them would need to be introduced, which would both complicate the user experience and potentially lead to confusing debugging experiences.
+
+Despite these issues, this closure-based approach shows general promise as a way to work within Rust's constraints while enabling dynamic and flexible user-facing APIs.
+
+\subsection{Factory} \label{factory}
+
+This method of DI works as described above by providing a single location where all dependencies are defined --- essentially associating instances with a unique key they can later be retrieved with. A dependency can be added with the \lstinline{add} function by tagging it with a unique string; to resolve the dependencies, the same string can be provided to \lstinline{resolve} to construct a new instance of that object. The definition of the container is shown in Listing \ref{lst:factory1}; internally, dependencies are tracked in a \lstinline{HashMap<String, Box<Any>>} and downcast at resolution time. Shared dependencies can be stored in the map as \lstinline{Rc<_>}, and even mutable shared references can be stored as \lstinline{Rc<RefCell<_>>} using Rust's concept of interior mutability and runtime borrowing.
+
+\begin{minipage}{\linewidth}
+\lstinputlisting[caption={Factory container definition},label={lst:factory1}]{listings/factory1.txt}
+\end{minipage}
+
+%\begin{lstlisting}[float=*,caption={Factory container definition},label={lst:factory1}]
+
+The actual construction itself takes place through the following traits shown in Listing \ref{lst:factory2}. An example of usage within a web server plugin in shown in Listing \ref{lst:factory3}. While this approach does provide a brittle DI factory scheme, it suffers from a number of problems:
+
+\begin{itemize}
+\item All dependencies registered in the map must implement the \lstinline{Clone} trait. This limitation is a result of the fact that at the time of dependency creation, the constructor is unknown. Thus, dependencies are required to provide a method of duplication. In the case of shared dependencies using \lstinline{Rc<_>}, this \lstinline{Clone} serves simply to increment the reference count. An alternate DI scheme that instantiates dependencies on the fly through provided constructors is explored in Section \ref{scope}.
+\item Dependency lifetimes are static and will last as long as the factory container exists. The brittle nature of dependency declarations in this scheme entails that dependencies' lifetimes are not simply limited to their natural lifetimes. A more ideal solution would tie dependency lifetimes to a scope associated with that of their parents as explored in \ref{scope}.
+\item This method also suffers from runtime safety issues. The user must explicitly annotate the type of the dependency to be resolved as shown in Listing \ref{lst:factory3}. An error by the user in specifying the type to be retrieved would result in a run-time error.
+\item There is also a fair amount of boilerplate involved in wiring dependencies as shown in the example; reducing boilerplate would require code generation or macros.
+\item As the dependency graph grows, the origin of runtime failures discussed above become difficult to pinpoint.
+\end{itemize}
+
+\begin{minipage}{\linewidth}
+\lstinputlisting[caption={Factory constructor traits},label={lst:factory2}]{listings/factory2.txt}
+\end{minipage}
+
+Given these shortcomings, we assign a ranking to this method in Table \ref{tab:di_comp}.
+
+\begin{minipage}{\linewidth}
+\lstinputlisting[caption={Factory usage in plugin},label={lst:factory3}]{listings/factory3.txt}
+\end{minipage}
+\subsection{Scope} \label{scope}
+One of the great shortcomings of the method discussed in Section \ref{factory} is the inability to tie dependent objects' lifetimes to that of their parents. The following method based on \cite{di-rs} solves this issue by providing a way to scope object lifetimes. The method is based on a slightly altered method of DI described by the author of \cite{di-rs}~\cite{inceptor}. Rather than pulling dependencies from a factory container, the entire dependency tree is constructed on demand and tied to the parent. The \lstinline{Scope<T>} struct shown in Listing \ref{lst:scope1} is used to hold an object and all of its constructed dependencies. The \lstinline{Dependencies} struct in Listing \ref{lst:scope2} maintains a \lstinline{HashMap} mapping each dependency tagged by the user with a unique string to a set of closures that are constructors for its dependent objects. When a dependency is resolved by calling \lstinline{resolve}, each constructor is called, and the dependent objects are returned. These closures themselves may contain calls to resolve dependencies. The dependency graph is defined by calling \lstinline{add}, providing the constructor for that dependency.
+
+\begin{minipage}{\linewidth}
+\lstinputlisting[caption={Dependency scoping},label={lst:scope1}]{listings/scope1.txt}
+\end{minipage}
+\lstinputlisting[float=*,caption={Dependency resolution and construction},label={lst:scope2}]{listings/scope2.txt}
+
+This method does provide advantages in limiting the lifetimes of dependent objects in comparison to the factory container, but it also has drawbacks of its own. Due to the fixed nature of the closure function signature, constructed objects can only be injected with at most one dependency. This restriction is severely limiting in cases where an object may depend on more than one object. Later versions of \cite{di-rs} overcome this limitation by providing hard-coded functions for one dependency, two dependencies, etc. This method also suffers from the same shortfalls in terms of expressiveness, flexibility, and debugability discussed in Section \ref{factory}.
+
+\subsection{Traits}
+
+Inspired by the factory approach discussed in \ref{factory}, we wanted to provide the same heterogenous storage pattern, but with more robust type safety. Unlike many other object-oriented language Rust's traits do not require unique method names in order to be used together, which meant it might be possible to expose type-safe views into the values of a map of \code{Any} objects.
+
+\begin{minipage}{\linewidth}
+\lstinputlisting[caption={Traits provide type-safe views},label={lst:trait_raw}]{listings/trait_raw.txt}
+\end{minipage}
+
+This allows us to hide the boilerplate of retrieving values from the backing store behind traits, enabling users to declare function signatures that take any number of different traits, and the framework can pass in the same instance (the map struct) for all of them:
+
+\begin{minipage}{\linewidth}
+\lstinputlisting[caption={The backing store can be reused for any type},label={lst:trait_usage}]{listings/trait_usage.txt}
+\end{minipage}
+
+This pattern provides a number of benefits in terms of both safety and flexibility, but actually implementing it would be quite verbose --- users would need to declare a new \code{trait} and \code{impl} for each type they want to inject, and might need to do so repeatedly if they need multiple variants of the backing store (e.g. if certain objects should only be available to a subset of requests). To reduce this excessive boilerplate, we introduced a set of macros to generate these types automatically. These macros are included in Listing \ref{lst:trait_macros}.
+
+\lstinputlisting[float=*,caption={Macros for trait-based dependency injection},label={lst:trait_macros}]{listings/trait_macros.txt}
+
+By hiding the boilerplate behind macros we end up with a concise yet highly flexible API for type-safe dependency injection:
+
+\begin{minipage}{\linewidth}
+\lstinputlisting[caption={The backing store can be reused for any type},label={lst:trait_macro_usage}]{listings/trait_macro_usage.txt}
+\end{minipage}
+
+This example introduces several interconnected macros:
+
+\begin{itemize}
+\item \textbf{\code{binder!}} Creates the struct containing the actual hashmap data store.
+\item \textbf{\code{binding!}} Creates a \code{trait} and \code{impl} enabling the listed type to be retrieved from the store by the given trait.
+\item \textbf{\code{provider!}} Creates a \code{trait} and \code{impl} that recursively depend on a different trait in the store, rather than on its own data.
+\item \textbf{\code{bind!}} Used when constructing an instance of the store to add (or bind) an instance to the backing map.
+\end{itemize}
+
+An additional macro, \code{inject!}, is provided to transform a function that takes $n$ binding traits into one that takes exactly one such argument, which enables the framework to support callbacks of any number of dependency-injected arguments. This macro proved to be one of the key limiting factors of this approach, as (it seems\footnote{https://stackoverflow.com/q/47767910/113632}) the only way to implement such a macro is to enumerate the case --- one parameter maps to one argument, two parameters map to two arguments, and so on. The Hypospray project appears to have run into the same issue, as mentioned in \ref{prior-art}.
+
+Functionally this is identical to the earlier hard-coded trait approach, but with almost no boilerplate beyond actually giving the desired types names to refer to them. Users get type safety, compartmentalization, and a fair bit of flexibility in a concise (albeit bespoke) syntax.
+
+Due to the somewhat intricate relationships between the different macros there are certain patterns that result in surprising errors or bugs (such as unexpectedly missing bindings due to implicit dereferencing), but improvements in the macros' implementations has helped reduce their likelyhood and confusion. Debugability still remains the least-well supported aspect of this approach, but many common errors, such as unbound types, are able to trigger clear and detailed panics.
+
+\section{Results}
+
+\subsection{Summary}
+
+ The design patterns we explored are quite common in other languages yet are difficult given Rust's design philosophy as a system's language with a preference for doing as much work as possible at compile-time. Finding ways to bridge that gap, while still taking advantage of Rust's safety and performance, is a fine needle to thread. While no single one of our approaches scored high in all the evaluation criteria, the macro-based traits pattern shows the most promise for providing users with a type-safe and expressive yet low-boilerplate interface. Pulling in more functionality from the other approaches could further improve its utility, as would enhancing it's error-detection behavior. Discounting the motivating approaches, the factory-based method in particular suffered from both low safety, flexibility, and verbosity.
+
+\subsection{Future Work}
+
+\begin{itemize}
+\item Investigate further metaprogramming and code generation approaches. Most existing dependency injection style applications in Rust today rely heavily on code generation, as it's the most flexible way to emulate reflection in other languages. Frameworks like Rocket provide even more elegant APIs than those explored here, essentially all thanks to compile-time code generation. This was an area we'd hoped to explore more, but it proved to be a larger space than we had time to dive into fully.
+\item Dynamically-typed return types, not just function inputs. For simplicity, every approach we explored assumed the data returned to the client would be a string, but webservers often return binary data such as images, and users may prefer to work with other higher-level types such as JSON and want the framework to be responsible for serializing the data they return. 
+\end{itemize}
+
+\section{Contributions}
+Michael implemented the web server skeleton and Simplified, Pattern, Closure, and Traits aproaches. Matthew implemented the Factory and Scope patterns.
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{report}
+
+\end{document}

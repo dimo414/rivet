@@ -1,0 +1,23 @@
+fn handle(&self, request: &Request) -> ResponseBox {
+    let path = ...;
+    let query = ...;
+
+    let cb: Box<Fn() -> ResponseBox> = match path.first() {
+        Some(part) => match part.as_ref() {
+            "path" => Box::new(
+                || util::success(&params_only(path))),
+            "query" => Box::new(
+                || util::success(&query_only(query))),
+            "both" => Box::new(
+                || util::success(&both(path, query))),
+             _ => Box::new(|| util::fail404("Not found!"))
+        },
+        None => Box::new(|| util::success(&root()))
+    };
+    cb()
+}
+
+fn params_only(params: &Vec<String>) -> String { ... }
+
+fn query_only(query: &HashMap<String, String>)
+    -> String { ... }

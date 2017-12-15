@@ -32,4 +32,4 @@ Run `./test_server.sh` to valdidate the server's runtime behavior (namely, that 
 ## Coursework
 
 * [Proposal](https://docs.google.com/document/d/1a3i-FbnnbSmXzR1A1wHFs1Z0LbnrB-3k_TgvPvc4By0/edit)
-* [Checkpoint](https://docs.google.com/document/d/1U-t16dSLtTCSrh781-u-_Os_tzxjF1PWpSl0ByN-wDY/edit)
+* [Checkpoint](https://docs.google.com/document/d/1rlz79Lw6CpZRgz5kLzh5_zXEOWeuxAGkblK9hGYEvS0/edit)

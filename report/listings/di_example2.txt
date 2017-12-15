@@ -1,0 +1,7 @@
+class DatabaseUpdater() {
+  private final Database db;
+  
+  public DatabaseUpdater(Database db) { this.db = db; }
+  
+  public updateDatabase(...) { db.write(...); }
+}

@@ -1,0 +1,24 @@
+struct DepStore {
+    store: HashMap<String, Box<Any>>
+}
+
+trait PathParts {
+    fn get(&self) -> &Vec<String>;
+}
+impl PathParts for DepStore {
+    fn get(&self) -> &Vec<String> {
+        self.store.get("PathParts").unwrap()
+            .downcast_ref::<Vec<String>>().unwrap()
+    }
+}
+
+trait Query {
+    fn get(&self) -> &HashMap<String, String>;
+}
+impl Query for DepStore {
+    fn get(&self) -> &HashMap<String, String> {
+        self.store.get("Query").unwrap()
+            .downcast_ref::<HashMap<String, String>>()
+            .unwrap()
+    }
+}

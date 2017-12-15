@@ -1,0 +1,6 @@
+class DatabaseUpdater() {
+  private final Database db =
+      new Database(USERNAME, PASSWORD);
+  
+  public updateDatabase(...) { db.write(...); }
+}
