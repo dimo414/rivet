@@ -2,7 +2,6 @@
 
 use std::any::Any;
 use std::collections::HashMap;
-use std::collections::hash_map::Entry;
 
 pub struct Scope<T> {
     pub parent: T,
@@ -33,33 +32,28 @@ impl Dependencies {
     pub fn run_constructors<P: Any>(&self, s: &str, parent: P) -> Scope<P> {
         match self.constructors.get(s) {
             Some(list) => {
-                let dependencies: Vec<_> = list.iter()
-                    .map(|construct| construct(&self, &parent))
-                    .collect();
-
-                Scope { parent: parent, children: dependencies }
+                let deps: Vec<_> = list.iter() .map(|construct| construct(&self, &parent)) .collect();
+                Scope { parent: parent, children: deps }
             },
             None => Scope { parent: parent, children: vec![] },
         }
     }
 
     pub fn add<P, C, F>(&mut self, s: &str, constructor: F)
-        where
-            P: 'static + Any, C: 'static + Any,
-            F: for<'r> Fn(&'r Dependencies, &P) -> C + 'static
+        where P: 'static + Any, C: 'static + Any, F: for<'r> Fn(&'r Dependencies, &P) -> C + 'static
     {
         match self.constructors.entry(s.to_string()) {
-            Entry::Occupied(mut list) => {
-                list.get_mut().push(create_constructor(constructor));
+            std::collections::hash_map::Entry::Occupied(mut list) => {
+                list.get_mut().push(box_constructor(constructor));
             },
-            Entry::Vacant(e) => {
-                e.insert(vec![create_constructor(constructor)]);
+            std::collections::hash_map::Entry::Vacant(e) => {
+                e.insert(vec![box_constructor(constructor)]);
             },
         };
     }
 }
 
-fn create_constructor<P, C, F>(constructor: F) -> Box<Fn(&Dependencies, &Any) -> Box<Any>>
+fn box_constructor<P, C, F>(constructor: F) -> Box<Fn(&Dependencies, &Any) -> Box<Any>>
     where F: for<'r> Fn(&'r Dependencies, &P) -> C + 'static, P: 'static + Any, C: 'static + Any
 {
     Box::new(move |deps: &Dependencies, parent: &Any| -> Box<Any> {
@@ -78,8 +72,8 @@ struct DepRef {
 fn main() {
     let mut deps = Dependencies::new();
 
-    deps.add("BaseRef", |deps, _parent: &BaseRef| DepRef{}.resolve("DepRef", deps));
     deps.add("DepRef", |_deps, _parent: &DepRef| println!("DepRef created"));
+    deps.add("BaseRef", |deps, _parent: &BaseRef| DepRef{}.resolve("DepRef", deps));
 
     BaseRef{}.resolve("BaseRef", &deps);
 }
