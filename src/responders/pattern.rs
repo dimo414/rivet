@@ -15,20 +15,20 @@ lazy_static! {
 
 struct Route {
     path: regex::Regex,
-    callback: fn(regex::Captures, &HashMap<String, String>) -> String
+    callback: fn(&regex::Captures, &HashMap<String, String>) -> String
 }
 
 impl Route {
-    pub fn new(path: &str, callback: fn(regex::Captures, &HashMap<String, String>) -> String) -> Route {
+    pub fn new(path: &str, callback: fn(&regex::Captures, &HashMap<String, String>) -> String) -> Route {
         Route { path: regex::Regex::new(&format!("^{}$", path)).unwrap(), callback }
     }
 }
 
-fn handle(url_captures: regex::Captures, url_params: &HashMap<String, String>) -> String {
+fn handle(url_captures: &regex::Captures, url_params: &HashMap<String, String>) -> String {
     format!("pattern!\nURL captures: {:?}\nQuery args: {:?}", url_captures, url_params)
 }
 
-fn handle_foo(_url_captures: regex::Captures, url_params: &HashMap<String, String>) -> String {
+fn handle_foo(_url_captures: &regex::Captures, url_params: &HashMap<String, String>) -> String {
     format!("Foo!\nQuery args: {:?}", url_params)
 }
 
@@ -44,7 +44,7 @@ impl responders::Responder for Pattern {
             match route.path.captures(url_parts.path()) {
                 Some(captures) => {
                     let callback = &route.callback;
-                    let response = callback(captures, url_parts.query());
+                    let response = callback(&captures, url_parts.query());
                     return util::success(&response);
                 }
                 None => {}
