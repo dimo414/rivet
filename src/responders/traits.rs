@@ -28,8 +28,8 @@ struct DIMap {
 impl DIMap {
     fn new(url_parts: util::UrlParts) -> DIMap {
         let mut store = HashMap::new();
-        store.insert("PathParts".into(), Box::new(url_parts.path_components) as Box<Any>);
-        store.insert("UrlParams".into(), Box::new(url_parts.query) as Box<Any>);
+        store.insert("PathParts".into(), Box::new(<DIMap as PathParts>::typecheck(url_parts.path_components)) as Box<Any>);
+        store.insert("UrlParams".into(), Box::new(<DIMap as UrlParams>::typecheck(url_parts.query)) as Box<Any>);
         DIMap { store }
     }
 }
@@ -39,6 +39,9 @@ impl DIMap {
 
 trait PathParts {
     fn get(&self) -> &Vec<String>;
+
+    // static trait method, see https://stackoverflow.com/q/24541074/113632
+    fn typecheck(e: Vec<String>) -> Vec<String> { e }
 }
 impl PathParts for DIMap {
     fn get(&self) -> &Vec<String> {
@@ -48,6 +51,8 @@ impl PathParts for DIMap {
 
 trait UrlParams {
     fn get(&self) -> &HashMap<String, String>;
+
+    fn typecheck(e: HashMap<String, String>) -> HashMap<String, String> { e }
 }
 
 
