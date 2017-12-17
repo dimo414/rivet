@@ -4,7 +4,7 @@ use std::any::Any;
 use tiny_http;
 use util;
 
-/// Use traits to expose a Map<Any> safely
+/// Use traits to expose a Map<_, Any> safely
 pub struct Traits {
 }
 
@@ -12,7 +12,9 @@ impl responders::Responder for Traits {
     fn handle(&mut self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
         let url_parts = util::strip_url_prefix(request.url(), "/traits");
 
-        let di_map = DIMap::new(url_parts);
+        let mut di_map = DIMap::new();
+        PathParts::put(&mut di_map, url_parts.path_components);
+        UrlParams::put(&mut di_map, url_parts.query);
         util::success(&dispatch(&di_map, &di_map))
     }
 }
@@ -26,38 +28,41 @@ struct DIMap {
 }
 
 impl DIMap {
-    fn new(url_parts: util::UrlParts) -> DIMap {
-        let mut store = HashMap::new();
-        store.insert("PathParts".into(), Box::new(<DIMap as PathParts>::typecheck(url_parts.path_components)) as Box<Any>);
-        store.insert("UrlParams".into(), Box::new(<DIMap as UrlParams>::typecheck(url_parts.query)) as Box<Any>);
-        DIMap { store }
+    fn new() -> DIMap {
+        DIMap { store: HashMap::new() }
     }
 }
 
 // These traits are functionally similar to Deref, but since they're traits and not types we can't
-// use Deref, so users must explitly call .get(). See https://stackoverflow.com/q/29256519/113632
+// use Deref, so users must explicitly call .get(). See https://stackoverflow.com/q/29256519/113632
 
 trait PathParts {
     fn get(&self) -> &Vec<String>;
 
-    // static trait method, see https://stackoverflow.com/q/24541074/113632
-    fn typecheck(e: Vec<String>) -> Vec<String> { e }
+    fn put(&mut self, value: Vec<String>);
 }
 impl PathParts for DIMap {
     fn get(&self) -> &Vec<String> {
         self.store.get("PathParts").unwrap().downcast_ref::<Vec<String>>().unwrap()
+    }
+    fn put(&mut self, value: Vec<String>) {
+        self.store.insert("PathParts".into(), Box::new(value) as Box<Any>);
     }
 }
 
 trait UrlParams {
     fn get(&self) -> &HashMap<String, String>;
 
-    fn typecheck(e: HashMap<String, String>) -> HashMap<String, String> { e }
+    fn put(&mut self, value: HashMap<String, String>);
 }
 
 
 impl UrlParams for DIMap {
     fn get(&self) -> &HashMap<String, String> {
         self.store.get("UrlParams").unwrap().downcast_ref::<HashMap<String, String>>().unwrap()
+    }
+
+    fn put(&mut self, value: HashMap<String, String>) {
+        self.store.insert("UrlParams".into(), Box::new(value) as Box<Any>);
     }
 }
