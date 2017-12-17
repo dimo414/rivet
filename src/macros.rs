@@ -11,30 +11,23 @@ macro_rules! binder {
         }
 
         impl $store {
-            fn new<F>(binding_closure: F) -> $store where
-                F: FnOnce(&mut HashMap<String, Box<Any>>) -> () {
-                let mut store = HashMap::new();
-                binding_closure(&mut store);
-                $store { store }
+            fn new() -> $store {
+                $store { store: HashMap::new() }
             }
         }
     }
 }
 
-/// Used inside the closure passed to a "binder" constructor to bind instances.
+/// Binds a value to to a binder instance - effectively just a wrapper for
+///   BindingTrait::put(&mut binder, value)
+/// but can be used for consistency with the other macro APIs
 ///   Usage: bind!(store, BindingTrait, Binding)
-///     Binder:        The argument to the binder's closure constructor
-///     BindingTrait:  Trait which will provide Binding
-///     Binding:       Instance to bind to the BindingTrait
+///     BinderInstance:  A Binder instance, where the binding will be stored
+///     BindingTrait:    Trait which will provide Binding
+///     Binding:         Instance to bind to the BindingTrait
 macro_rules! bind {
     ($map:ident, $bnd:ident, $value:expr) => {
-        // TODO validate $value is of the appropriate type for $bnd
-        match $map.entry(stringify!($bnd).into()) {
-            Entry::Vacant(entry) => entry.insert(Box::new($value) as Box<Any>),
-            Entry::Occupied(_) =>
-                // TODO include the existing binding in the error
-                panic!("Conflicting binding for {}, cannot bind to {:?}", stringify!($bnd),  $value)
-        }
+        $bnd::put(&mut $map, $value);
     }
 }
 
@@ -45,7 +38,7 @@ macro_rules! bind {
 ///     BindingType:       Type that BindingTrait will provide
 macro_rules! binding {
     ($store:ident, $name:ident, $ty:ty) => {
-        trait $name { fn get(&self) -> &$ty; }
+        trait $name { fn get(&self) -> &$ty; fn put(&mut self, value: $ty); }
 
         impl $name for $store {
             fn get(&self) -> &$ty {
@@ -59,6 +52,17 @@ macro_rules! binding {
                     None => panic!("{} has no binding for {}!\n\t{:?}\n",
                          stringify!($store), stringify!($name), self.store.keys())
                 }
+            }
+            fn put(&mut self, value: $ty) {
+                match self.store.entry(stringify!($name).into()) {
+                    Entry::Occupied(_) => {
+                        panic!("Conflicting binding for {}, cannot bind to {:?}", stringify!($bnd),  value)
+                    },
+                    Entry::Vacant(entry) => {
+                        entry.insert(Box::new(value) as Box<Any>);
+                    }
+                }
+                //self.store.insert(stringify!($name).into(), Box::new(value) as Box<Any>);
             }
         }
     }
@@ -136,9 +140,8 @@ mod tests {
 
     #[test]
     fn basic_di() {
-        let deps = MyDeps::new(|binder| {
-            bind!(binder, MyBinding, "FooBar".to_string());
-        });
+        let mut deps = MyDeps::new();
+        bind!(deps, MyBinding, "FooBar".to_string());
 
         let my_binding: &MyBinding = &deps;
         assert_eq!(my_binding.get(), "FooBar");

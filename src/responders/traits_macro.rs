@@ -20,10 +20,8 @@ impl responders::Responder for TraitsMacro {
 
         let callback = dispatcher(&url_parts);
 
-        let deps = DI::new(move |binder| {
-            // note that we can't bind anything directly from request, since DI would then own it
-            bind!(binder, UrlParts, url_parts);
-        });
+        let mut deps = DI::new();
+        bind!(deps, UrlParts, url_parts);
 
         callback(&deps)
     }
