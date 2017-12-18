@@ -1,5 +1,5 @@
 /// A set of macros that provide a basic Dependency Injection pattern
-/// TODO these macros rely on HashMap, hash_map::Entry, and Any being in-scope, which is tedious
+/// Always fully-qualify imports here so callers don't need to add unnecessary use statements
 
 /// Constructs a "binder", a struct that can hold arbitrary types, installed via the bind! macro.
 ///   Usage: binder!(BinderTypeName)
@@ -7,12 +7,12 @@
 macro_rules! binder {
     ($store:ident) => {
         struct $store {
-            store: HashMap<String, Box<Any>>
+            store: ::std::collections::HashMap<String, Box<::std::any::Any>>
         }
 
         impl $store {
             fn new() -> $store {
-                $store { store: HashMap::new() }
+                $store { store: ::std::collections::HashMap::new() }
             }
         }
     }
@@ -49,17 +49,20 @@ macro_rules! binding {
                             stringify!($name), stringify!($ty))
                     }
                     },
-                    None => panic!("{} has no binding for {}!\n\t{:?}\n",
+                    None => panic!("{} has no binding for {}!\n\tBound types: {:?}\n",
                          stringify!($store), stringify!($name), self.store.keys())
                 }
             }
             fn put(&mut self, value: $ty) {
                 match self.store.entry(stringify!($name).into()) {
-                    Entry::Occupied(_) => {
-                        panic!("Conflicting binding for {}, cannot bind to {:?}", stringify!($bnd),  value)
+                    ::std::collections::hash_map::Entry::Occupied(entry) => {
+                        let existing: &$ty = entry.get().downcast_ref::<$ty>().unwrap();
+                        panic!(
+                            "Conflicting binding for {}; cannot bind to {:?} already bound to {:?}",
+                            stringify!($bnd), value, existing)
                     },
-                    Entry::Vacant(entry) => {
-                        entry.insert(Box::new(value) as Box<Any>);
+                    ::std::collections::hash_map::Entry::Vacant(entry) => {
+                        entry.insert(Box::new(value) as Box<::std::any::Any>);
                     }
                 }
                 //self.store.insert(stringify!($name).into(), Box::new(value) as Box<Any>);
@@ -129,14 +132,9 @@ macro_rules! inject_http_success {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use std::collections::hash_map::Entry;
-    use std::any::Any;
-
-    //use super::*;
-
     binder!(MyDeps);
     binding!(MyDeps, MyBinding, String);
+    provider!(MyDeps, ProvidedBinding, str, MyBinding, |dep: &'a MyBinding| &dep.get()[..3]);
 
     #[test]
     fn basic_di() {
@@ -144,7 +142,17 @@ mod tests {
         bind!(deps, MyBinding, "FooBar".to_string());
 
         let my_binding: &MyBinding = &deps;
+        let my_provided_binding: &ProvidedBinding = &deps;
         assert_eq!(my_binding.get(), "FooBar");
+        assert_eq!(my_provided_binding.get(), "Foo");
+    }
+
+    #[test]
+    #[should_panic(expected = "MyDeps has no binding for MyBinding!")]
+    fn basic_di_missing_binding() {
+        let deps = MyDeps::new();
+        let my_binding: &MyBinding = &deps;
+        my_binding.get();
     }
 
     // TODO more tests

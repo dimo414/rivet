@@ -1,7 +1,5 @@
 use responders;
 use std::collections::HashMap;
-use std::collections::hash_map::Entry;
-use std::any::Any;
 use tiny_http;
 use util;
 
