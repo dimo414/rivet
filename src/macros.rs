@@ -1,5 +1,6 @@
 /// A set of macros that provide a basic Dependency Injection pattern
 /// Always fully-qualify imports here so callers don't need to add unnecessary use statements
+/// See also https://doc.rust-lang.org/book/first-edition/ufcs.html wrt invoking traits
 
 /// Constructs a "binder", a struct that can hold arbitrary types, installed via the bind! macro.
 ///   Usage: binder!(BinderTypeName)

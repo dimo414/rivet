@@ -1055,7 +1055,8 @@ Computing Machinery]
   \ifx\acmConference@shortname\@empty
     \gdef\acmConference@shortname{#2}%
   \fi}
-\acmConference[]{Final Project}{Fall 2017}{CS242}
+\acmConference[Conference'17]{ACM Conference}{July 2017}{Washington,
+  DC, USA}
 \def\acmBooktitle#1{\gdef\@acmBooktitle{#1}}
 \acmBooktitle{Proceedings of \acmConference@name
        \ifx\acmConference@name\acmConference@shortname\else
@@ -1231,7 +1232,7 @@ Computing Machinery]
   \else
     \ClassInfo{\@classname}{Suppressing CCS}%
   \fi}{\ClassError{\@classname}{printccs must be true or false}}
-\define@boolkey+{@ACM@topmatter@}[@ACM@]{printacmref}[false]{%
+\define@boolkey+{@ACM@topmatter@}[@ACM@]{printacmref}[true]{%
   \if@ACM@printacmref
     \ClassInfo{\@classname}{Printing bibformat}%
   \else
@@ -1248,7 +1249,7 @@ Computing Machinery]
       #1}}{\ClassWarning{\@classname}{Parameter authorsperrow must be
       numerical. Ignoring the input #1}\gdef\@ACM@authorsperrow{0}}}
 \def\settopmatter#1{\setkeys{@ACM@topmatter@}{#1}}
-\settopmatter{printccs=true, printacmref=false}
+\settopmatter{printccs=true, printacmref=true}
 \if@ACM@manuscript
   \settopmatter{printfolios=true}
 \else

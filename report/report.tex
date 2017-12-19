@@ -3,6 +3,14 @@
 \usepackage{listings}
 \usepackage{booktabs}
 \usepackage{url}
+\usepackage{balance}
+
+% ACM template customizations
+% See https://tex.stackexchange.com/a/346309
+\settopmatter{printacmref=false} % Removes citation information below abstract
+\renewcommand\footnotetextcopyrightpermission[1]{} % removes footnote with conference information in first column
+\acmConference[CS 242]{CS 242}{Fall 2017}{Stanford University} % replace conference details
+
 
 \lstset{
   frame=top,frame=bottom,
@@ -10,15 +18,14 @@
   formfeed=newpage,
   tabsize=4,
   commentstyle=itshape,
-  basicstyle=\ttfamily\footnotesize,
-  morekeywords={pub, public, private, class, var, mut, self, fn, impl, struct, match, where, move, let, trait, static, ref}
+  basicstyle=\ttfamily\footnotesize
 }
 
 \def\code#1{\lstinline{#1}}
 
 \begin{document}
-\title{CS242 Final Report}
-\subtitle{Rivet: Dependency Injection in Rust}
+\title{Rivet: Dependency Injection in Rust}
+\subtitle{CS242 Final Report}
 
 \author{Michael Diamond}
 \affiliation{}
