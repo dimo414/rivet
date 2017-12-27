@@ -1,6 +1,4 @@
-pub struct Factory {
-  container: Container,
-}
+pub struct Factory { container: Container }
 
 impl responders::Responder for Factory {
     fn new() -> Factory {

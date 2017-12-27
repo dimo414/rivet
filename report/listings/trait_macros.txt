@@ -5,28 +5,20 @@ macro_rules! binder {
     ($store:ident) => {
         struct $store { store: HashMap<String, Box<Any>> }
         impl $store {
-            fn new<F>(binding_closure: F) -> $store where
-                F: FnOnce(&mut HashMap<String, Box<Any>>) -> () {
-                let mut store = HashMap::new();
-                binding_closure(&mut store);
-                $store { store }
-            }
+            fn new() -> $store { $store { store: HashMap::new() } }
         }}}
 
-/// Used inside the closure passed to a "binder" constructor to bind instances.
+/// Binds a value to to a binder instance - effectively just a wrapper for
+///   BindingTrait::put(&mut binder, value)
+/// but can be used for consistency with the other macro APIs
 ///   Usage: bind!(store, BindingTrait, Binding)
-///     Binder:        The argument to the binder's closure constructor
-///     BindingTrait:  Trait which will provide Binding
-///     Binding:       Instance to bind to the BindingTrait
+///     BinderInstance:  A Binder instance, where the binding will be stored
+///     BindingTrait:    Trait which will provide Binding
+///     Binding:         Instance to bind to the BindingTrait
 macro_rules! bind {
     ($map:ident, $bnd:ident, $value:expr) => {
-        // TODO validate $value is of the appropriate type for $bnd
-        match $map.entry(stringify!($bnd).into()) {
-            Entry::Vacant(entry) => entry.insert(Box::new($value) as Box<Any>),
-            Entry::Occupied(_) =>
-                // TODO include the existing binding in the error
-                panic!("Conflicting binding for {}, cannot bind to {:?}", stringify!($bnd),  $value)
-        }}}
+        $bnd::put(&mut $map, $value);
+    }}
 
 /// Registers a binding, creating a trait with the given name
 ///   Usage: binding!(BinderType, BindingTraitName, BindingType)
@@ -35,7 +27,8 @@ macro_rules! bind {
 ///     BindingType:       Type that BindingTrait will provide
 macro_rules! binding {
     ($store:ident, $name:ident, $ty:ty) => {
-        trait $name { fn get(&self) -> &$ty; }
+        trait $name { fn get(&self) -> &$ty; fn put(&mut self, value: $ty); }
+
         impl $name for $store {
             fn get(&self) -> &$ty {
                 match self.store.get(stringify!($name).into()) {
@@ -43,12 +36,23 @@ macro_rules! binding {
                         Some(dep) => dep,
                         None => panic!("Could not downcast {} to {} - wrong binding! type?",
                             stringify!($name), stringify!($ty))
-                    } },
-                    None => panic!("{} has no binding for {}!\n\t{:?}\n",
+                    }},
+                    None => panic!("{} has no binding for {}!\n\tBound types: {:?}\n",
                          stringify!($store), stringify!($name), self.store.keys())
                 }
             }
-        }}}
+            fn put(&mut self, value: $ty) {
+                match self.store.entry(stringify!($name).into()) {
+                    Entry::Occupied(entry) => {
+                        let existing: &$ty = entry.get().downcast_ref::<$ty>().unwrap();
+                        panic!("Conflicting binding for {}; cannot bind to {:?} already bound to {:?}",
+                            stringify!($bnd), value, existing)
+                    },
+                    Entry::Vacant(entry) => {
+                        entry.insert(Box::new(value) as Box<Any>);
+                    }
+                }
+            }}}}
 
 // Registers a provider of a binding, introducing a recursive dependency on another binding
 // Note this can only provide references, not owned types (because the closure would be the owner,
@@ -58,8 +62,7 @@ macro_rules! binding {
 ///     ProviderTraitName:  Trait to create that will provide the given binding
 ///     ProviderType:       Type that ProviderTrait will provide
 ///     DependantTrait:     Binding trait that the provider depends on
-///     Closure:            A closure of the form |d: &'a DependantTrait| ... that returns a
-///                         reference to an value of ProviderType
+///     Closure:            A closure of the form |d: &'a DependantTrait| ... that returns a &ProviderType
 macro_rules! provider {
     ($store:ident, $name:ident, $ty:ty, $dep:ty, $provider_fn:expr) => {
         trait $name { fn get(&self) -> &$ty; }
@@ -67,5 +70,4 @@ macro_rules! provider {
         impl $name for $store {
             fn get<'a>(&'a self) -> &$ty {
                 &$provider_fn(self as &$dep)
-            }
-        }}}
+            }}}}

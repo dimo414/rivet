@@ -1,10 +1,6 @@
-struct DepStore {
-    store: HashMap<String, Box<Any>>
-}
+struct DepStore { store: HashMap<String, Box<Any>> }
 
-trait PathParts {
-    fn get(&self) -> &Vec<String>;
-}
+trait PathParts { fn get(&self) -> &Vec<String>; }
 impl PathParts for DepStore {
     fn get(&self) -> &Vec<String> {
         self.store.get("PathParts").unwrap()

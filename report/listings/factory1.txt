@@ -4,10 +4,7 @@ struct Container {
 
 impl Container {
     fn new() -> Container {
-        Container {
-            constructors: HashMap::new(),
-        }
-    }
+        Container { constructors: HashMap::new() }}
     
     fn add<T: Constructors<T> + 'static>
       (&mut self, s: &str, value: T) {

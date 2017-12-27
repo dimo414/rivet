@@ -9,9 +9,8 @@ fn handle(&self, request: &Request) -> ResponseBox {
     // struct containing both the path and the query
     let url_parts = ...;
     
-    let deps = DepStore::new(move |binder| {
-        bind!(binder, UrlParts, url_parts);
-    });
+    let mut deps = DepStore::new();
+    bind!(deps, UrlParts, url_parts);
 
     user_func(&deps, ...)
 }

@@ -14,6 +14,8 @@ fn handle(&self, request: &Request) -> ResponseBox {
         },
         None => Box::new(|| util::success(&root()))
     };
+
+    // framework invokes the callback later
     cb()
 }
 
