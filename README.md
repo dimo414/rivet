@@ -1,5 +1,14 @@
 # Rivet
 
+## About
+
+CS 242: Programming Languages [Final Project](http://cs242.stanford.edu/project/) for Fall Quarter,
+2017. We explored different approaches to the Strategy Pattern and Dependency Injection in Rust,
+and authored a
+[paper](https://drive.google.com/open?id=1Ozn7aZeAT36PbBXAtLVjQQeuLVu7E-Pe) of our findings.
+
+Authors: Michael Diamond and Matthew Vilim
+
 ## Running
 
 ```shell
@@ -29,9 +38,8 @@ Run `./test_server.sh` to valdidate the server's runtime behavior (namely, that 
   * https://docs.rs/hypospray/0.1.2/hypospray
 * https://github.com/Nercury/di-rs
 
-## Coursework
+## License
 
-* [Proposal](https://docs.google.com/document/d/1a3i-FbnnbSmXzR1A1wHFs1Z0LbnrB-3k_TgvPvc4By0/edit)
-* [Checkpoint](https://docs.google.com/document/d/1rlz79Lw6CpZRgz5kLzh5_zXEOWeuxAGkblK9hGYEvS0/edit)
-  [PDF](https://drive.google.com/open?id=1Ozn7aZeAT36PbBXAtLVjQQeuLVu7E-Pe)
-* [Presentation](https://docs.google.com/presentation/d/1M3T4Ql7t1xlpPwvUYwt9Is880fIYJgkWPPIkgXW5EEs/edit)
+Licensed under the Apache 2 license, copyright 2017 Google, Matthew Vilim.
+
+This is not an officially supported Google product.
