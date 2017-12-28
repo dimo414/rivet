@@ -28,5 +28,5 @@ use tiny_http;
 /// For example, a plugin might support parsing data out of the URL path and provide those values
 /// to the callback.
 pub trait Responder {
-    fn handle(& mut self, &tiny_http::Request) -> tiny_http::ResponseBox;
+    fn handle(&self, &tiny_http::Request) -> tiny_http::ResponseBox;
 }

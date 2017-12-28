@@ -23,7 +23,7 @@ pub struct Closure {
 }
 
 impl responders::Responder for Closure {
-    fn handle(& mut self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
+    fn handle(&self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
         let url_parts = util::strip_url_prefix(request.url(), "/closure");
 
         // This is essentially a manually-written DI pattern - while dense conceptually this function could

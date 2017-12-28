@@ -13,12 +13,13 @@
 // limitations under the License.
 
 use responders;
+use std::any::Any;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+use std::sync::Mutex;
 use tiny_http;
 use util;
-use std::collections::HashMap;
-use std::any::Any;
-use std::rc::Rc;
-use std::cell::RefCell;
 
 struct Container {
     constructors: HashMap<String, Box<Any>>,
@@ -73,7 +74,9 @@ impl<T: Clone> Builder<T> for T {
 }
 
 pub struct Factory {
-  container: Container,
+  // Global state in the responder - generally not a good practice but used here as an example of
+  // a persistent resource.
+  container: Mutex<Container>,
 }
 
 impl Factory {
@@ -81,16 +84,17 @@ impl Factory {
         let mut c = Container::new();
         let count = Rc::new(RefCell::new(0));
         c.add("count", count);
-        Factory { container: c }
+        Factory { container: Mutex::new(c) }
     }
 }
 
 impl responders::Responder for Factory {
-    fn handle(&mut self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
+    fn handle(&self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
         let url_parts = util::strip_url_prefix(request.url(), "/factory");
 
-        self.container.add("url_parts", url_parts);
-        let count: Rc<RefCell<i32>> = self.container.resolve("count");
+        let mut container = self.container.lock().unwrap();
+        container.add("url_parts", url_parts);
+        let count: Rc<RefCell<i32>> = container.resolve("count");
         *count.borrow_mut() += 1;
         util::success(&format!("Count {:?}", count))
     }

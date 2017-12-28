@@ -23,7 +23,7 @@ pub struct Traits {
 }
 
 impl responders::Responder for Traits {
-    fn handle(&mut self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
+    fn handle(&self, request: &tiny_http::Request) -> tiny_http::ResponseBox {
         let url_parts = util::strip_url_prefix(request.url(), "/traits");
 
         let mut di_map = DIMap::new();

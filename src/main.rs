@@ -37,8 +37,7 @@ mod util;
 /// code paths registered with the `NicePlugin` responder.
 fn main() {
     // Register responders here
-    // TODO responders should be immutable
-    let mut responders = {
+    let responders = {
         let mut m: HashMap<String, Box<responders::Responder>> = HashMap::new();
         m.insert("".into(), Box::new(RootResponder {}));
         m.insert("closure".into(), Box::new(responders::closure::Closure {}));
@@ -75,7 +74,7 @@ fn main() {
 
         // Lookup the right responder for the request
         let url_prefix = url_prefix(&request.url()).to_string();
-        let response = match responders.get_mut(&url_prefix) {
+        let response = match responders.get(&url_prefix) {
             Some(responder) => {
                 if url_prefix.len() > 0 { print!(" - routed to {}", url_prefix); }
                 responder.handle(&request)
@@ -102,7 +101,7 @@ fn url_prefix(url: &str) -> &str {
 /// A responder for the homepage (`/`)
 struct RootResponder {}
 impl responders::Responder for RootResponder {
-    fn handle(&mut self, _request: &tiny_http::Request) -> tiny_http::ResponseBox {
+    fn handle(&self, _request: &tiny_http::Request) -> tiny_http::ResponseBox {
         // TODO better names / clearer descriptions
         util::success_html(
             "<ul>
