@@ -18,7 +18,6 @@ use tiny_http;
 use util;
 
 /// Stringly-typed responder, treats URLs as strings, application logic must do parsing
-// TODO does this example have anything that pattern doesn't? Should it be deleted?
 pub struct Stringly {
 }
 
