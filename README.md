@@ -2,9 +2,9 @@
 
 ## About
 
-CS 242: Programming Languages [Final Project](http://cs242.stanford.edu/project/) for Fall Quarter,
-2017. We explored different approaches to the Strategy Pattern and Dependency Injection in Rust,
-and authored a
+CS 242: Programming Languages [Final Project](https://stanford-cs242.github.io/f17/project/) for
+Fall Quarter, 2017. We explored different approaches to the Strategy Pattern and Dependency
+Injection in Rust, and authored a
 [paper](https://drive.google.com/open?id=1Ozn7aZeAT36PbBXAtLVjQQeuLVu7E-Pe) of our findings.
 
 Authors: Michael Diamond and Matthew Vilim
